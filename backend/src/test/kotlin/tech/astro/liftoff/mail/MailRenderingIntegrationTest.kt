@@ -17,7 +17,7 @@ class MailRenderingIntegrationTest : IntegrationTest() {
         for (locale in SupportedLocales.ALL) {
             for (kind in MailKind.entries) {
                 val url = "https://app.example/path?token=abc123"
-                val rendered = renderer.render(OutgoingMail("ada@example.com", "Ada", locale, kind, url, listOf("Grace")))
+                val rendered = renderer.render(OutgoingMail("ada@example.com", "Ada", locale, kind, url, listOf("Grace", "42.00 €")))
                 val label = "$kind/$locale"
                 assertTrue(rendered.subject.isNotBlank(), label)
                 assertTrue(rendered.html.contains(url), "$label: link missing from HTML")

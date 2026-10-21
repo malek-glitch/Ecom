@@ -22,6 +22,9 @@ enum class Setting(
     val default: String,
     val clientVisible: Boolean,
     val description: String,
+    /** Extra rule for STRING values (checked on save), or for INTEGER values: the minimum. */
+    val pattern: Regex? = null,
+    val min: Int? = null,
 ) {
     REGISTRATION_ENABLED(
         key = "auth.registrationEnabled",
@@ -43,6 +46,37 @@ enum class Setting(
         default = "",
         clientVisible = true,
         description = "Contact address shown in the app footer.",
+    ),
+    SHOP_CURRENCY(
+        key = "shop.currency",
+        type = SettingType.STRING,
+        default = "EUR",
+        clientVisible = true,
+        description = "ISO 4217 code of the store currency (EUR, USD, MAD...). Existing orders keep the currency they were placed in.",
+        pattern = Regex("^[A-Z]{3}$"),
+    ),
+    SHOP_SHIPPING_FLAT(
+        key = "shop.shippingFlatCents",
+        type = SettingType.INTEGER,
+        default = "500",
+        clientVisible = true,
+        description = "Flat shipping fee per order, in cents (500 = 5.00). 0 for free shipping.",
+        min = 0,
+    ),
+    SHOP_FREE_SHIPPING_THRESHOLD(
+        key = "shop.freeShippingThresholdCents",
+        type = SettingType.INTEGER,
+        default = "5000",
+        clientVisible = true,
+        description = "Orders from this subtotal, in cents, ship free. 0 turns the offer off.",
+        min = 0,
+    ),
+    SHOP_BANK_TRANSFER_INSTRUCTIONS(
+        key = "shop.bankTransferInstructions",
+        type = SettingType.STRING,
+        default = "",
+        clientVisible = true,
+        description = "Bank details shown to customers who pay by transfer. Leave empty to hide that payment option.",
     ),
     ;
 

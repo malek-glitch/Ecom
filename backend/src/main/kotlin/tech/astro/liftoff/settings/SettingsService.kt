@@ -61,10 +61,17 @@ class SettingsService(
         when (setting.type) {
             SettingType.BOOLEAN -> normalized.toBooleanStrictOrNull()
                 ?: throw FieldValidationException("value", "Boolean", "must be true or false")
-            SettingType.INTEGER -> normalized.toIntOrNull()
-                ?: throw FieldValidationException("value", "Integer", "must be a whole number")
-            SettingType.STRING -> if (normalized.length > 2000) {
-                throw FieldValidationException("value", "Size", "must be at most 2000 characters")
+            SettingType.INTEGER -> {
+                val number = normalized.toIntOrNull() ?: throw FieldValidationException("value", "Integer", "must be a whole number")
+                if (setting.min != null && number < setting.min) {
+                    throw FieldValidationException("value", "Min", "must be at least ${setting.min}")
+                }
+            }
+            SettingType.STRING -> {
+                if (normalized.length > 2000) throw FieldValidationException("value", "Size", "must be at most 2000 characters")
+                if (setting.pattern != null && !setting.pattern.matches(normalized)) {
+                    throw FieldValidationException("value", "Pattern", "has an invalid format")
+                }
             }
         }
         val previous = raw(setting)

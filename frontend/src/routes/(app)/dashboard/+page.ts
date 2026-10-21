@@ -7,6 +7,9 @@ export const load = (() => ({
 	sessionCount: call(api.GET('/api/v1/me/sessions'))
 		.then((sessions) => sessions.length)
 		.catch(() => null),
+	orderCount: call(api.GET('/api/v1/orders', { params: { query: { size: 1 } } }))
+		.then((page) => page.totalItems)
+		.catch(() => null),
 	// [example:notes]
 	noteCount: call(api.GET('/api/v1/notes', { params: { query: { size: 1 } } }))
 		.then((page) => page.totalItems)

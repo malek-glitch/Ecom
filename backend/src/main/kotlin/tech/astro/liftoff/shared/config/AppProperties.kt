@@ -27,6 +27,7 @@ data class AppProperties(
     val storage: Storage = Storage(),
     val rateLimit: RateLimit = RateLimit(),
     val audit: Audit = Audit(),
+    val shop: Shop = Shop(),
 ) {
     data class Auth(
         /** HMAC key for access tokens, 32+ characters. Rotating it is transparent: clients refresh (sessions live in the database). */
@@ -73,6 +74,7 @@ data class AppProperties(
         val publicBaseUrl: String = "",
         val createBucket: Boolean = true,
         val maxAvatarSize: DataSize = DataSize.ofMegabytes(5),
+        val maxProductImageSize: DataSize = DataSize.ofMegabytes(8),
     )
 
     data class RateLimit(
@@ -83,4 +85,11 @@ data class AppProperties(
     }
 
     data class Audit(val retention: Duration = Duration.ofDays(365))
+
+    data class Shop(
+        /** Fills an empty catalog with demo categories and products at startup (development and demos). */
+        val seedDemo: Boolean = false,
+        /** Products at or below this stock count show up as "low stock" for admins and customers. */
+        val lowStockThreshold: Int = 5,
+    )
 }

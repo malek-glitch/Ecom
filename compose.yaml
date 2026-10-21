@@ -79,6 +79,7 @@ services:
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-liftoff}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-liftoff-dev-secret}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      SHOP_SEED_DEMO: ${SHOP_SEED_DEMO:-false}
     depends_on:
       postgres:
         condition: service_healthy

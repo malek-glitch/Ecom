@@ -64,7 +64,7 @@ Durations use Spring's format: `30s`, `15m`, `2h`, `30d`.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `STORAGE_ENABLED` | `false` | Turns on uploads (profile photos). Off: the upload buttons are hidden. |
+| `STORAGE_ENABLED` | `false` | Turns on uploads (profile and product photos). Off: the upload buttons are hidden and products show a placeholder. |
 | `STORAGE_ENDPOINT` | `http://localhost:9000` | S3 endpoint. Empty means AWS S3 itself. |
 | `STORAGE_REGION` | `us-east-1` | Region; most S3-compatible servers accept any value. |
 | `STORAGE_BUCKET` | `liftoff` | Bucket, created at startup if missing. |
@@ -76,7 +76,8 @@ Durations use Spring's format: `30s`, `15m`, `2h`, `30d`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `CORS_ALLOWED_ORIGINS` | empty | Comma-separated origins allowed to call the API from a browser on another origin. Not needed when the API and app share a domain (the default setup). Capacitor needs `capacitor://localhost,https://localhost`. |
-| `RATE_LIMIT_ENABLED` | `true` | Per-IP limits on sign-in, sign-up, refresh and email endpoints. |
+| `RATE_LIMIT_ENABLED` | `true` | Per-IP limits on sign-in, sign-up, refresh, email, cart and checkout endpoints. |
+| `SHOP_SEED_DEMO` | `false` (`true` in `.env.example`) | Fills an empty catalog with demo categories and products at startup. Does nothing once a product exists. Keep it off in production. |
 | `SPRING_PROFILES_ACTIVE` | | `prod` in `compose.prod.yaml`. See [Profiles](#profiles). |
 
 ### Frontend
@@ -128,6 +129,8 @@ Spring maps `app.auth.password-reset-ttl` to `APP_AUTH_PASSWORDRESETTTL`: upperc
 | `app.auth.invitation-ttl` (`APP_AUTH_INVITATIONTTL`) | `7d` | Lifetime of invitation links. |
 | `app.storage.create-bucket` (`APP_STORAGE_CREATEBUCKET`) | `true` | Create the bucket at startup. Turn it off when the key can't create buckets. |
 | `app.storage.max-avatar-size` (`APP_STORAGE_MAXAVATARSIZE`) | `5MB` | Largest accepted profile photo. |
+| `app.storage.max-product-image-size` (`APP_STORAGE_MAXPRODUCTIMAGESIZE`) | `8MB` | Largest accepted product photo (also capped by `spring.servlet.multipart.max-file-size`, 10MB). |
+| `app.shop.low-stock-threshold` (`APP_SHOP_LOWSTOCKTHRESHOLD`) | `5` | Products at or below this stock count as "low stock" in the admin stats and filters. |
 | `app.rate-limit.policies.<name>.capacity` / `.period` (`APP_RATELIMIT_POLICIES_LOGIN_CAPACITY`, `APP_RATELIMIT_POLICIES_LOGIN_PERIOD`) | see below | Override a rate-limit policy. |
 | `app.audit.retention` (`APP_AUDIT_RETENTION`) | `365d` | Audit events older than this are deleted every night. |
 | `app.maintenance.cron` (`APP_MAINTENANCE_CRON`) | `0 17 3 * * *` | When the nightly cleanup runs: expired sessions, used email links, old audit events. |
@@ -141,7 +144,9 @@ Default rate-limit policies, per client IP:
 | `email` | 5 per 15 minutes | "send the link again", "forgot password" |
 | `refresh` | 60 per minute | token refresh |
 | `google` | 20 per minute | Google sign-in |
-| `upload` | 20 per 10 minutes | profile photo |
+| `upload` | 20 per 10 minutes | profile and product photos |
+| `cart` | 120 per minute | cart pricing (`/public/shop/cart/quote`) |
+| `checkout` | 10 per 10 minutes | placing an order |
 
 ## Runtime settings
 
@@ -153,6 +158,10 @@ A setting nobody has changed uses its default.
 | `auth.registrationEnabled` | `true` | Whether new people can create an account. Turn it off for an invite-only app. |
 | `app.announcement` | empty | A banner shown to every signed-in user. |
 | `app.supportEmail` | empty | Contact address in the public footer. |
+| `shop.currency` | `EUR` | ISO 4217 code of the store currency. Prices are stored in its minor units (cents for EUR, whole yen for JPY), so pick it before entering prices. Existing orders keep their own currency. |
+| `shop.shippingFlatCents` | `500` | Shipping fee per order, in minor units (500 = 5.00). `0` ships everything free. |
+| `shop.freeShippingThresholdCents` | `5000` | Orders from this subtotal ship free. `0` turns the offer off. |
+| `shop.bankTransferInstructions` | empty | Bank details shown to customers who pay by transfer. Empty hides that payment option; cash on delivery is always offered. |
 
 To add your own, see [Add a runtime setting](ARCHITECTURE.md#add-a-runtime-setting).
 

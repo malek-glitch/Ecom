@@ -2,6 +2,7 @@
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import BookOpen from '@lucide/svelte/icons/book-open';
 	import NotebookPen from '@lucide/svelte/icons/notebook-pen'; // [example:notes]
+	import Receipt from '@lucide/svelte/icons/receipt';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import { session } from '$lib/auth/session.svelte';
 	import PageHeader from '$lib/components/app/PageHeader.svelte';
@@ -42,6 +43,23 @@
 				{m.dashboard_security_link()}
 				<ArrowRight class="rtl:rotate-180" />
 			</Button>
+		</Card.Footer>
+	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Description class="flex items-center gap-2">
+				<Receipt class="size-4" />
+				{m.dashboard_orders_title()}
+			</Card.Description>
+			<StatValue value={data.orderCount} label={(count) => m.orders_count({ count })} />
+		</Card.Header>
+		<Card.Footer class="flex flex-wrap gap-2">
+			<Button variant="outline" size="sm" href="/orders">
+				{m.dashboard_orders_link()}
+				<ArrowRight class="rtl:rotate-180" />
+			</Button>
+			<Button variant="ghost" size="sm" href="/products">{m.nav_shop()}</Button>
 		</Card.Footer>
 	</Card.Root>
 

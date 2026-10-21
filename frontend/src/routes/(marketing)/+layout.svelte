@@ -4,6 +4,7 @@
 	import LocaleSwitcher from '$lib/components/app/LocaleSwitcher.svelte';
 	import Logo from '$lib/components/app/Logo.svelte';
 	import ThemeToggle from '$lib/components/app/ThemeToggle.svelte';
+	import CartButton from '$lib/components/shop/CartButton.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { m } from '$lib/paraglide/messages';
 
@@ -21,16 +22,20 @@
 			<a href="/" class="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
 				<Logo name={data.config.appName} />
 			</a>
+			<Button href="/products" variant="ghost" class="hidden sm:inline-flex">{m.nav_shop()}</Button>
 			<nav class="ms-auto flex items-center gap-1">
 				<LocaleSwitcher />
 				<ThemeToggle />
+				<CartButton />
 				{#if session.isAuthenticated}
-					<Button href="/dashboard" class="ms-2">{m.nav_open_app()}</Button>
+					<Button href="/orders" variant="ghost" class="ms-2 hidden sm:inline-flex">{m.nav_orders()}</Button>
+					<Button href="/dashboard">{m.nav_open_app()}</Button>
 				{:else}
 					<Button href="/login" variant="ghost" class="ms-2 hidden sm:inline-flex">{m.nav_sign_in()}</Button>
-					<Button href={data.config.registrationEnabled ? '/register' : '/login'}>
-						{data.config.registrationEnabled ? m.nav_get_started() : m.nav_sign_in()}
-					</Button>
+					<Button href="/login" class="sm:hidden">{m.nav_sign_in()}</Button>
+					{#if data.config.registrationEnabled}
+						<Button href="/register" class="hidden sm:inline-flex">{m.nav_create_account()}</Button>
+					{/if}
 				{/if}
 			</nav>
 		</div>

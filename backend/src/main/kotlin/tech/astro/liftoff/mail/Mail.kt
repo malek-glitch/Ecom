@@ -6,6 +6,9 @@ enum class MailKind(val key: String) {
     RESET_PASSWORD("reset"),
     INVITATION("invite"),
     PASSWORD_CHANGED("password_changed"),
+    ORDER_PLACED("order_placed"),
+    ORDER_SHIPPED("order_shipped"),
+    ORDER_CANCELLED("order_cancelled"),
 }
 
 /** Published inside a transaction; delivered only after it commits. */

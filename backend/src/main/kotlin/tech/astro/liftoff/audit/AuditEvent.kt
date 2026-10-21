@@ -67,5 +67,12 @@ object AuditActions {
     const val ADMIN_SESSIONS_REVOKED = "admin.sessions_revoked"
     const val ADMIN_PASSWORD_RESET_SENT = "admin.password_reset_sent"
     const val ADMIN_SETTING_CHANGED = "admin.setting_changed"
+    const val ADMIN_PRODUCT_CREATED = "admin.product_created"
+    const val ADMIN_PRODUCT_UPDATED = "admin.product_updated"
+    const val ADMIN_PRODUCT_DELETED = "admin.product_deleted"
+    const val ADMIN_CATEGORY_CREATED = "admin.category_created"
+    const val ADMIN_CATEGORY_UPDATED = "admin.category_updated"
+    const val ADMIN_CATEGORY_DELETED = "admin.category_deleted"
+    const val ADMIN_ORDER_STATUS_CHANGED = "admin.order_status_changed"
     const val ADMIN_BOOTSTRAPPED = "system.admin_bootstrapped"
 }

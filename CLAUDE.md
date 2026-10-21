@@ -9,7 +9,7 @@ this file in the same commit. The human-facing docs live in `README.md` and `doc
 backend/    Spring Boot 4 + Kotlin, JDK 25, Gradle (package tech.astro.liftoff)
 frontend/   SvelteKit 2 + Svelte 5 runes, Tailwind 4, shadcn-svelte, Paraglide
 deploy/     Traefik config, backup/restore scripts      compose.yaml, compose.prod.yaml at the root
-docs/       CONFIGURATION, DEPLOYMENT, ARCHITECTURE, MOBILE
+docs/       CONFIGURATION, DEPLOYMENT, ARCHITECTURE, SHOP, MOBILE
 ```
 
 ## Commands
@@ -30,7 +30,8 @@ Before saying a change is done, run the checks for the side you touched: `./grad
 
 ## Backend conventions
 
-- **Feature modules:** `auth`, `user`, `admin`, `audit`, `settings`, `mail`, `storage`, `note` (example), and `shared` for cross-cutting code. Inside a module: `controller/ dto/ model/ repository/ service/`.
+- **Feature modules:** `auth`, `user`, `admin`, `audit`, `settings`, `mail`, `storage`, `catalog` and `order` (the shop, see `docs/SHOP.md`), `note` (example), and `shared` for cross-cutting code. Inside a module: `controller/ dto/ model/ repository/ service/`.
+- **Shop:** money is `Long` minor units (`...Cents`), never floating point. Stock only changes through `ProductRepository.takeStock/returnStock` (atomic conditional updates). Orders copy product names, prices and the address: never read live product data to display an order. Store rules (currency, shipping) come from `PricingService`.
 - **Schema:** Flyway migrations (`db/migration/V<n>__name.sql`). Never edit an applied migration. Hibernate only validates (`ddl-auto: validate`).
 - **Errors:** throw the `AppException` subclasses (`shared/error/AppException.kt`) with a stable `code` like `note.not_found`. Responses are RFC 9457 problem documents. A new user-facing code also needs a message in the frontend's `errorMessage()` (`src/lib/api/errors.ts`).
 - **Security:**
@@ -51,15 +52,16 @@ Before saying a change is done, run the checks for the side you touched: `./grad
 ## Frontend conventions
 
 - **Svelte 5 runes only:** `$state`, `$derived`, `$effect`, `$props`. Use `$app/state`, never `$app/stores` (ESLint enforces it).
-- **Rendering:** `(marketing)` and `(auth)` pages are server-rendered. `(app)` is browser-only (`ssr = false`), because tokens live in localStorage. No `+page.server.ts` and no form actions, so the static SPA build keeps working.
+- **Rendering:** `(marketing)` (the storefront) and `(auth)` pages are server-rendered, except `/cart` and `/checkout` (`ssr = false`: the cart lives in localStorage). `(app)` is browser-only (`ssr = false`), because tokens live in localStorage. No `+page.server.ts` and no form actions, so the static SPA build keeps working.
 - **API calls:**
   - always through `api` from `$lib/api/client` (typed by `schema.d.ts`, generated: don't edit it);
+  - server-rendered store pages use `storeApi(fetch, url)` + `loadOrError()` from `$lib/shop/store-api` instead (works during SSR);
   - `call()` in components;
   - `callForPage()` in `load` functions, so failures become SvelteKit error pages;
   - API data in `load`, with `depends('app:<key>')` plus `invalidate('app:<key>')` after mutations.
 - **Session:** `$lib/auth/session.svelte` (`session.user`, `session.isAdmin`, `signIn`, `signOut`). Don't read tokens directly.
 - **Forms:** `createForm` from `$lib/forms/form.svelte` with zod schemas built from `$lib/forms/schemas`, plus the shadcn `Field` components. For edit forms, `initial: () => ({...})` and render inside `{#key id}`.
-- **Text:** every visible string is a Paraglide message (`m.key()`), added to all three files in `frontend/messages/` (fr is the base language, ar is right-to-left). Plurals use the `notes_count` format.
+- **Text:** every visible string is a Paraglide message (`m.key()`), added to all three files in `frontend/messages/` (fr is the base language, ar is right-to-left). Plurals use the `notes_count` format. Format money with `formatMoney(minor, currency)`; the store currency comes from `shopSettings(config.settings)`.
 - **Layout:** logical CSS only (`ms-/me-/ps-/pe-/start-/end-/text-start`). `npm run lint` fails on `left-*`, `ml-*`, `text-left`, … Flip arrow icons with `rtl:rotate-180`. Format dates and numbers with `$lib/i18n/format`.
 - **UI:**
   - shadcn-svelte components in `$lib/components/ui` (add new ones with the CLI);
@@ -79,6 +81,7 @@ editing nearby code.
 
 - PostgreSQL 18 images keep data in `/var/lib/postgresql` (not `.../data`).
 - `.env` is imported by Spring as a `.properties` file: no quotes, no comments after values.
+- openapi-fetch reads `content-length`/`content-type` on responses; `hooks.server.ts` lets SvelteKit serialize them (`filterSerializedResponseHeaders`), or SSR store loads fail.
 - SvelteKit's server-side `fetch` adds an `Origin` header, which the backend's CORS check rejects. `hooks.server.ts` calls the platform `fetch` for API requests on purpose.
 - Group layouts without pages lose their parent's `data` type in generated `$types`: add a page before relying on it.
 - To stop a background `bootRun`, use a bracket pattern such as `pkill -f "[A]pplicationKt"`: a plain pattern also matches your own shell.

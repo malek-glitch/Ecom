@@ -1,11 +1,23 @@
 # Liftoff
 
-A full-stack starter for web apps: a **Spring Boot 4 + Kotlin** API, a **SvelteKit + Svelte 5**
-frontend and **PostgreSQL 18**. Accounts, roles, administration, emails, file storage, three
-languages (one of them right-to-left) and a production setup work on day one, so a new project
-starts with its own features.
+A full-stack template for selling goods online: a **Spring Boot 4 + Kotlin** API, a
+**SvelteKit + Svelte 5** storefront and **PostgreSQL 18**. A catalog, cart, checkout, order
+handling, accounts, administration, emails, file storage, three languages (one of them
+right-to-left) and a production setup work on day one, so a new shop starts with its own products.
 
 ## What's included
+
+**Online store** ([docs/SHOP.md](docs/SHOP.md))
+
+- Server-rendered storefront: home page, catalog with search, categories, sorting and pagination, product pages.
+- A cart that works without an account, priced by the server on every change.
+- Checkout with shipping address and payment by cash on delivery or bank transfer (card payments are a documented extension).
+- Stock taken atomically at checkout, so the last item can't be sold twice; cancelling restocks.
+- Order history for customers, with cancellation while an order is pending.
+- Admin area for products (with photos), categories and orders (paid, shipped, delivered, cancelled), plus revenue and low-stock stats.
+- Order emails in the customer's language: confirmation, shipped, cancelled.
+- Store currency, shipping fee, free-shipping threshold and bank details as runtime settings.
+- Optional demo catalog (`SHOP_SEED_DEMO=true`).
 
 **Accounts and security**
 
@@ -129,6 +141,8 @@ to turn uploads on.
 │       ├── settings/        runtime settings
 │       ├── mail/            email rendering and sending
 │       ├── storage/         S3 storage and avatars (optional)
+│       ├── catalog/         categories and products, the public catalog
+│       ├── order/           cart pricing, checkout, orders, order emails
 │       ├── note/            the example module
 │       └── shared/          config, security, errors, web helpers
 ├── frontend/                SvelteKit app
@@ -137,7 +151,7 @@ to turn uploads on.
 │   ├── src/routes/          (marketing) · (auth) · (app) with admin/
 │   └── tests/e2e/           Playwright tests
 ├── deploy/                  Traefik config, backup and restore scripts
-├── docs/                    configuration, deployment, architecture, mobile
+├── docs/                    configuration, deployment, architecture, shop, mobile
 ├── scripts/init.mjs         renames a fresh copy of the template
 ├── compose.yaml             development (and the full stack with --profile app)
 └── compose.prod.yaml        production

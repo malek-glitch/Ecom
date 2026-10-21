@@ -36,6 +36,8 @@ features use `controller/ dto/ model/ repository/ service/` subpackages. Small o
 | `settings` | Runtime settings, editable by admins without a redeploy. |
 | `mail` | Renders localized emails (Thymeleaf, HTML and text) and sends them after commit, with retries. |
 | `storage` | S3 storage, avatar processing and the file proxy. Only active with `STORAGE_ENABLED=true`. |
+| `catalog` | The store's categories and products: the public catalog (`/api/v1/public/shop`), admin CRUD, product photos, the demo seeder. See [SHOP.md](SHOP.md). |
+| `order` | Cart pricing, checkout with atomic stock updates, order history, admin order handling and order emails. See [SHOP.md](SHOP.md). |
 | `note` | The example module: copy it, then delete it. |
 | `shared` | Cross-cutting pieces: typed configuration (`AppProperties`), security, errors, paging, request IDs, locales. |
 
@@ -165,10 +167,13 @@ Without `MAIL_HOST`, emails are written to the log instead.
 ```
 src/routes/
 ├── +layout.ts           loads the public config (app name, flags, settings) from the API
-├── (marketing)/         landing page                                  SSR
+├── (marketing)/         store home, products, product page            SSR
+│   ├── cart/            the cart (kept in localStorage)               browser only
+│   └── checkout/        address and payment, needs an account         browser only
 ├── (auth)/              login, register, forgot/reset password, verify SSR, guest-only where it matters
-├── (app)/               dashboard, notes, settings                    browser only, signed in
-│   └── admin/           overview, users, settings, audit              browser only, ADMIN
+├── (app)/               dashboard, my orders, notes, settings         browser only, signed in
+│   └── admin/           overview, orders, products, categories,       browser only, ADMIN
+│                        users, settings, audit
 └── healthz/             container health check
 ```
 
@@ -193,6 +198,7 @@ Route groups (the parenthesized folders) don't appear in URLs. Each group has it
 - Server-side rendering calls the API through `handleFetch` (`hooks.server.ts`):
   - relative `/api/...` requests go straight to `API_INTERNAL_URL`, with a 3-second timeout;
   - this avoids routing back through the public domain, which often hangs inside Docker.
+- Server-rendered store pages use `storeApi(fetch, url)` from `lib/shop/store-api.ts` instead of `api`: the same typed client, but going through SvelteKit's `fetch` so it works during SSR. `loadOrError(...)` is its `callForPage`.
 
 ### Forms
 
