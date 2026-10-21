@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /notes
+Disallow: /settings
+Disallow: /admin

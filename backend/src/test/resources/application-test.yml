@@ -1,0 +1,22 @@
+app:
+  auth:
+    jwt-secret: test-only-jwt-secret-0123456789-abcdefghij
+    refresh-reuse-grace: 0s
+  mail:
+    async: false
+  rate-limit:
+    enabled: false
+  google:
+    client-id: test-google-client-id
+  admin:
+    email: admin@liftoff.test
+    password: Admin-Password-1
+
+spring:
+  mail:
+    host: ""
+
+logging:
+  level:
+    org.testcontainers: WARN
+    tc: WARN

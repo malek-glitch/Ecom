@@ -1,0 +1,126 @@
+# Local development.
+#
+#   docker compose up -d                      Postgres + Mailpit (run the backend and frontend yourself)
+#   docker compose --profile storage up -d    ... plus RustFS (S3-compatible storage) for avatars
+#   docker compose --profile app up -d --build
+#                                             the whole stack in containers at http://localhost:8000
+#
+# Production uses compose.prod.yaml (see docs/DEPLOYMENT.md). Variables come from .env.
+name: ${COMPOSE_PROJECT_NAME:-liftoff}
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-liftoff}
+      POSTGRES_USER: ${POSTGRES_USER:-liftoff}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-liftoff}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # PostgreSQL 18+ images keep data under /var/lib/postgresql/18/docker:
+      # mount the parent directory, not .../data as with older versions.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # Catches every email the app sends. Inbox: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    restart: unless-stopped
+
+  # S3-compatible object storage. Console: http://localhost:9001
+  rustfs:
+    profiles: [storage]
+    image: rustfs/rustfs:1.0.0
+    environment:
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-liftoff}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_KEY:-liftoff-dev-secret}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "${RUSTFS_PORT:-9000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    profiles: [app]
+    build: ./backend
+    environment:
+      APP_NAME: ${APP_NAME:-Liftoff}
+      APP_URL: http://localhost:${APP_PORT:-8000}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-liftoff}
+      DATABASE_USER: ${POSTGRES_USER:-liftoff}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-liftoff}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      AUTH_REQUIRE_VERIFIED_EMAIL: ${AUTH_REQUIRE_VERIFIED_EMAIL:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      MAIL_FROM: ${MAIL_FROM:-Liftoff <no-reply@liftoff.local>}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      STORAGE_ENABLED: ${STORAGE_ENABLED:-false}
+      STORAGE_ENDPOINT: http://rustfs:9000
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-liftoff}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-liftoff}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-liftoff-dev-secret}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    profiles: [app]
+    build: ./frontend
+    environment:
+      ORIGIN: http://localhost:${APP_PORT:-8000}
+      API_INTERNAL_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Reverse proxy for the full stack: /api/* to the backend, the rest to the frontend.
+  # In production Traefik runs outside this file (see docs/DEPLOYMENT.md).
+  traefik:
+    profiles: [app]
+    image: traefik:v3.5
+    command:
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --entrypoints.web.address=:80
+      - --ping=true
+      - --log.level=INFO
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - ./deploy/traefik/dev.yml:/etc/traefik/dynamic.yml:ro
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  rustfs-data:

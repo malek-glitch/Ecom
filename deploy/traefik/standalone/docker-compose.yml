@@ -1,0 +1,30 @@
+# Traefik for a server without a reverse proxy. From this folder:
+#
+#   docker network create edge          # once: apps join it to be reachable
+#   mkdir -p dynamic letsencrypt
+#   cp ../liftoff.yml dynamic/          # then edit the domain inside
+#   docker compose up -d
+#
+# Already running Traefik? Skip this folder and just copy ../liftoff.yml into its dynamic directory.
+services:
+  traefik:
+    image: traefik:v3.5
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - edge
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+
+networks:
+  edge:
+    external: true

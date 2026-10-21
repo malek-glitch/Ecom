@@ -1,0 +1,9 @@
+node_modules/
+.svelte-kit/
+build/
+src/lib/paraglide/
+test-results/
+playwright-report/
+blob-report/
+.env
+.env.*

@@ -1,0 +1,111 @@
+# Liftoff backend. Every value below reads an environment variable (${NAME:default}).
+# In development the repository's root .env is imported automatically, so `./gradlew bootRun`
+# picks up the same settings as Docker Compose. Real environment variables always win.
+# Full reference: docs/CONFIGURATION.md
+spring:
+  application:
+    name: liftoff
+  config:
+    import: "optional:file:${LIFTOFF_DOTENV:../.env}[.properties]"
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/liftoff}
+    username: ${DATABASE_USER:liftoff}
+    password: ${DATABASE_PASSWORD:liftoff}
+    hikari:
+      maximum-pool-size: ${DATABASE_POOL_SIZE:10}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema; Hibernate only checks it matches the entities
+    properties:
+      hibernate:
+        default_batch_fetch_size: 25
+        jdbc:
+          time_zone: UTC
+  flyway:
+    locations: classpath:db/migration
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+  messages:
+    basename: i18n/messages
+    fallback-to-system-locale: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  thymeleaf:
+    check-template-location: false # templates are only used for emails
+
+server:
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  health:
+    mail:
+      enabled: false # a mail outage must not mark the API unhealthy: sends are retried
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+      roles: ADMIN
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    persist-authorization: true
+    tags-sorter: alpha
+
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"
+
+app:
+  name: ${APP_NAME:Liftoff}
+  frontend-url: ${APP_URL:http://localhost:5173}
+  auth:
+    jwt-secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:liftoff}
+    access-token-ttl: ${JWT_ACCESS_TTL:15m}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:30d}
+    require-verified-email: ${AUTH_REQUIRE_VERIFIED_EMAIL:true}
+  mail:
+    from: ${MAIL_FROM:Liftoff <no-reply@liftoff.local>}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+  storage:
+    enabled: ${STORAGE_ENABLED:false}
+    endpoint: ${STORAGE_ENDPOINT:http://localhost:9000}
+    region: ${STORAGE_REGION:us-east-1}
+    bucket: ${STORAGE_BUCKET:liftoff}
+    access-key: ${STORAGE_ACCESS_KEY:}
+    secret-key: ${STORAGE_SECRET_KEY:}
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL:}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}

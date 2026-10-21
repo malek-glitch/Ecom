@@ -1,0 +1,55 @@
+# Traefik routing for the production stack (compose.prod.yaml).
+#
+# Copy this file into your Traefik "dynamic" directory (the one its file provider watches,
+# e.g. /srv/traefik/dynamic/) and change app.example.com to your domain: the file provider
+# can't read environment variables. Traefik picks it up without a restart.
+#
+# It assumes Traefik has:
+#   - entry points `web` (:80, redirecting to `websecure`) and `websecure` (:443)
+#   - a certificate resolver called `letsencrypt`
+#   - a Docker network called `edge` shared with the app's containers
+# deploy/traefik/standalone/ is a ready-made Traefik that has all three.
+#
+# Service names (liftoff-backend, liftoff-frontend) are network aliases set in compose.prod.yaml:
+# unique on purpose, because every app on the shared `edge` network would otherwise answer
+# to "backend" and "frontend".
+
+http:
+  routers:
+    liftoff-api:
+      rule: Host(`app.example.com`) && PathPrefix(`/api`)
+      entryPoints: [websecure]
+      service: liftoff-backend
+      middlewares: [liftoff-headers, liftoff-compress]
+      tls:
+        certResolver: letsencrypt
+      priority: 20
+
+    liftoff-web:
+      rule: Host(`app.example.com`)
+      entryPoints: [websecure]
+      service: liftoff-frontend
+      middlewares: [liftoff-headers, liftoff-compress]
+      tls:
+        certResolver: letsencrypt
+      priority: 10
+
+  services:
+    liftoff-backend:
+      loadBalancer:
+        servers:
+          - url: http://liftoff-backend:8080
+    liftoff-frontend:
+      loadBalancer:
+        servers:
+          - url: http://liftoff-frontend:3000
+
+  middlewares:
+    liftoff-compress:
+      compress: {}
+    liftoff-headers:
+      headers:
+        # Browsers ignore HSTS on plain HTTP, so this only takes effect on the HTTPS site.
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        # The app sets the other security headers (CSP, nosniff, frame denial) itself.

@@ -1,0 +1,17 @@
+# Active in Docker deployments (SPRING_PROFILES_ACTIVE=prod).
+server:
+  # Trust X-Forwarded-* from the reverse proxy (private-network addresses only),
+  # so client IPs in rate limits and audit logs are real.
+  forward-headers-strategy: native
+
+springdoc:
+  # Re-enable with SPRINGDOC_API_DOCS_ENABLED=true and SPRINGDOC_SWAGGER_UI_ENABLED=true if needed.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  structured:
+    format:
+      console: ecs # one JSON object per line, ready for Loki/ELK

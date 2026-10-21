@@ -1,0 +1,59 @@
+name: End-to-end
+
+# The whole stack in Docker (behind Traefik, like the production setup), driven by Playwright.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure
+        run: |
+          cp .env.example .env
+          # The tests sign in more often than the login rate limit allows.
+          sed -i 's/^RATE_LIMIT_ENABLED=.*/RATE_LIMIT_ENABLED=false/' .env
+
+      - name: Start the stack
+        run: docker compose --profile app up --detach --build --wait --wait-timeout 300
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright
+        working-directory: frontend
+        run: npm run test:e2e
+        env:
+          E2E_BASE_URL: http://localhost:8000
+
+      - if: failure()
+        run: docker compose --profile app logs --no-color > compose-logs.txt
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            compose-logs.txt
+      - if: always()
+        run: docker compose --profile app down --volumes

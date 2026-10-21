@@ -1,0 +1,32 @@
+# Secrets: only the example file is committed
+.env
+.env.*
+!.env.example
+*.pem
+client_secret_*.json
+
+# Backend
+backend/build/
+backend/.gradle/
+backend/.kotlin/
+backend/out/
+
+# Frontend
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/src/lib/paraglide/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
+# Local data
+backups/
+
+# Editors and OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

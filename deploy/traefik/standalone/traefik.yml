@@ -1,0 +1,32 @@
+# A minimal Traefik for a server that doesn't have one yet. It routes whatever the .yml files
+# in ./dynamic/ describe (copy deploy/traefik/liftoff.yml there) and gets Let's Encrypt
+# certificates for them. Replace the email below.
+api:
+  dashboard: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: you@example.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+log:
+  level: INFO

@@ -1,0 +1,86 @@
+<script lang="ts">
+	import { invalidate } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
+	import { api, call } from '$lib/api/client';
+	import { errorMessage } from '$lib/api/errors';
+	import type { components } from '$lib/api/schema';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Spinner } from '$lib/components/ui/spinner';
+	import { Switch } from '$lib/components/ui/switch';
+	import { m } from '$lib/paraglide/messages';
+
+	type Setting = components['schemas']['AdminSettingResponse'];
+
+	let { setting }: { setting: Setting } = $props();
+
+	// Follows the saved value; typing overrides it until the next save or reload.
+	let draft = $derived(setting.value);
+	let saving = $state(false);
+	const dirty = $derived(draft !== setting.value);
+
+	async function save(value: string) {
+		saving = true;
+		try {
+			const saved = await call(
+				api.PUT('/api/v1/admin/settings/{key}', { params: { path: { key: setting.key } }, body: { value } }),
+			);
+			draft = saved.value;
+			toast.success(m.admin_setting_saved());
+			// Client-visible settings reach the app through the public config: reload it.
+			await Promise.all([invalidate('app:admin-settings'), saved.clientVisible ? invalidate('app:config') : null]);
+		} catch (error) {
+			draft = setting.value;
+			toast.error(errorMessage(error));
+		} finally {
+			saving = false;
+		}
+	}
+</script>
+
+<div class="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+	<div class="min-w-0 space-y-1">
+		<p class="flex flex-wrap items-center gap-2">
+			<code class="rounded bg-muted px-1.5 py-0.5 text-sm font-medium" dir="ltr">{setting.key}</code>
+			{#if setting.clientVisible}<Badge variant="outline">{m.admin_setting_public()}</Badge>{/if}
+		</p>
+		<!-- Descriptions come from the backend's Setting enum (English). -->
+		<p class="text-sm text-muted-foreground" dir="auto">{setting.description}</p>
+		<p class="text-xs text-muted-foreground">
+			{m.admin_setting_default({ value: setting.default === '' ? m.admin_setting_empty() : setting.default })}
+		</p>
+	</div>
+	<div class="shrink-0 sm:w-80">
+		{#if setting.type === 'BOOLEAN'}
+			<div class="flex items-center gap-2 sm:justify-end">
+				{#if saving}<Spinner class="text-muted-foreground" />{/if}
+				<Switch
+					checked={draft === 'true'}
+					disabled={saving}
+					aria-label={setting.key}
+					onCheckedChange={(checked) => save(String(checked))}
+				/>
+			</div>
+		{:else}
+			<form
+				class="flex gap-2"
+				onsubmit={(event) => {
+					event.preventDefault();
+					void save(draft);
+				}}
+			>
+				<Input
+					bind:value={draft}
+					type={setting.type === 'INTEGER' ? 'number' : 'text'}
+					aria-label={setting.key}
+					dir="auto"
+				/>
+				<Button type="submit" variant="outline" disabled={!dirty || saving}>
+					{#if saving}<Spinner />{/if}
+					{m.common_save()}
+				</Button>
+			</form>
+		{/if}
+	</div>
+</div>

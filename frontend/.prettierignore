@@ -1,0 +1,14 @@
+# Generated
+src/lib/paraglide/
+src/lib/api/schema.d.ts
+.svelte-kit/
+build/
+# Lockfiles and caches
+package-lock.json
+project.inlang/cache/
+test-results/
+playwright-report/
+# Translations: kept in the format inlang tools write
+messages/
+# Managed by inlang tooling
+project.inlang/

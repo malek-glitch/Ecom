@@ -1,0 +1,23 @@
+# Routing for `docker compose --profile app` (http://localhost:8000): plain HTTP, no certificates.
+# Same two routes as production: /api/* goes to the API, everything else to the web app.
+http:
+  routers:
+    api:
+      rule: PathPrefix(`/api`)
+      entryPoints: [web]
+      service: backend
+      priority: 20
+    web:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      service: frontend
+      priority: 10
+  services:
+    backend:
+      loadBalancer:
+        servers:
+          - url: http://backend:8080
+    frontend:
+      loadBalancer:
+        servers:
+          - url: http://frontend:3000

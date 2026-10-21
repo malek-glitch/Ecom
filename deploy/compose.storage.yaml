@@ -1,0 +1,35 @@
+# Adds RustFS (S3-compatible storage) to the production stack, for uploads.
+# In the server's .env:
+#
+#   COMPOSE_FILE=compose.prod.yaml:deploy/compose.storage.yaml
+#   STORAGE_ENABLED=true
+#   STORAGE_ACCESS_KEY=...   STORAGE_SECRET_KEY=...   (also RustFS's own credentials)
+#
+# RustFS isn't published: only the backend talks to it, and it streams files to browsers.
+services:
+  rustfs:
+    image: rustfs/rustfs:1.0.0
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY:?set STORAGE_ACCESS_KEY in .env}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_KEY:?set STORAGE_SECRET_KEY in .env}
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  backend:
+    depends_on:
+      rustfs:
+        condition: service_healthy
+
+volumes:
+  rustfs-data:

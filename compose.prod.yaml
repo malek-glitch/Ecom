@@ -1,0 +1,139 @@
+# Production. The app doesn't publish ports: Traefik, running on the server and shared with
+# your other apps, receives the traffic over the external Docker network `edge` and gets the
+# HTTPS certificates. No Traefik yet? deploy/traefik/standalone/ starts one.
+#
+#   docker network create edge        once per server, if it doesn't exist
+#   cp deploy/traefik/liftoff.yml <traefik dynamic dir>/     and edit the domain inside
+#
+# Put COMPOSE_FILE=compose.prod.yaml in the server's .env (add :deploy/compose.storage.yaml
+# for RustFS uploads); then plain `docker compose` commands use it:
+#
+#   docker compose up -d --build                     build the images on the server
+#   docker compose pull && docker compose up -d      or run images built by CI (BACKEND_IMAGE, ...)
+#
+# Step by step: docs/DEPLOYMENT.md. Every variable: docs/CONFIGURATION.md.
+name: ${COMPOSE_PROJECT_NAME:-liftoff}
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  postgres:
+    <<: [*restart, *logging]
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      # PostgreSQL 18+: mount /var/lib/postgresql (not .../data as with older versions).
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 256mb
+
+  backend:
+    <<: [*restart, *logging]
+    image: ${BACKEND_IMAGE:-liftoff-backend}:${APP_VERSION:-latest}
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      APP_NAME: ${APP_NAME:-Liftoff}
+      APP_URL: https://${APP_DOMAIN:?set APP_DOMAIN in .env}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
+      AUTH_REQUIRE_VERIFIED_EMAIL: ${AUTH_REQUIRE_VERIFIED_EMAIL:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
+      MAIL_FROM: ${MAIL_FROM:?set MAIL_FROM in .env}
+      STORAGE_ENABLED: ${STORAGE_ENABLED:-false}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://rustfs:9000}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-liftoff}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-}
+      STORAGE_PUBLIC_BASE_URL: ${STORAGE_PUBLIC_BASE_URL:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      default:
+        aliases: [liftoff-backend]
+      edge:
+        aliases: [liftoff-backend]
+    deploy:
+      resources:
+        limits:
+          memory: ${BACKEND_MEMORY:-1g}
+
+  frontend:
+    <<: [*restart, *logging]
+    image: ${FRONTEND_IMAGE:-liftoff-frontend}:${APP_VERSION:-latest}
+    build: ./frontend
+    environment:
+      # The public URL: SvelteKit checks it on form posts and uses it for absolute URLs.
+      ORIGIN: https://${APP_DOMAIN}
+      # Server-side rendering calls the API directly on the internal network.
+      API_INTERNAL_URL: http://liftoff-backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      default:
+        aliases: [liftoff-frontend]
+      edge:
+        aliases: [liftoff-frontend]
+    deploy:
+      resources:
+        limits:
+          memory: ${FRONTEND_MEMORY:-512m}
+
+  # Daily pg_dump into ./backups, keeping BACKUP_RETENTION_DAYS days. Copy them off the server!
+  backup:
+    <<: [*restart, *logging]
+    image: postgres:18-alpine
+    entrypoint: ["/bin/sh", "/scripts/backup.sh"]
+    environment:
+      PGHOST: postgres
+      PGDATABASE: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - ./deploy/backup:/scripts:ro
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  # Shared with Traefik (and your other apps). Only frontend and backend join it.
+  edge:
+    external: true
+
+volumes:
+  postgres-data:
