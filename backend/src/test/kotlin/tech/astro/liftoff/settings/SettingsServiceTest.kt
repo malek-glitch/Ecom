@@ -72,4 +72,29 @@ class SettingsServiceTest {
         assertEquals(true, visible["auth.registrationEnabled"])
         assertEquals("", visible["app.announcement"])
     }
+
+    @Test
+    fun `typed settings check their values`() {
+        every { repository.findById(any()) } returns Optional.empty()
+        every { repository.save(any()) } answers { firstArg() }
+        fun refused(setting: Setting, value: String) = assertThrows<FieldValidationException> { service.set(setting.key, value, admin) }
+
+        refused(Setting.THEME_BRAND_COLOR, "blue")
+        refused(Setting.THEME_BRAND_COLOR, "#12345")
+        refused(Setting.THEME_RADIUS, "huge")
+        refused(Setting.STORE_LOGO_URL, "javascript:alert(1)")
+        refused(Setting.STORE_LOGO_URL, "https://cdn.example/logo.svg\" onerror=\"x")
+        refused(Setting.STORE_ANNOUNCEMENT_BAR, "x".repeat(161))
+        refused(Setting.SHOP_CURRENCY, "euro")
+
+        assertEquals("#2563eb", service.set(Setting.THEME_BRAND_COLOR.key, " #2563eb ", admin).value)
+        assertEquals("", service.set(Setting.THEME_BRAND_COLOR.key, "", admin).value)
+        assertEquals("large", service.set(Setting.THEME_RADIUS.key, "large", admin).value)
+        assertEquals("https://cdn.example/logo.svg", service.set(Setting.STORE_LOGO_URL.key, "https://cdn.example/logo.svg", admin).value)
+    }
+
+    @Test
+    fun `choice settings default to one of their options`() {
+        Setting.entries.filter { it.type == SettingType.CHOICE }.forEach { assertTrue(it.default in it.options, it.key) }
+    }
 }

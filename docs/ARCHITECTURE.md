@@ -36,6 +36,9 @@ features use `controller/ dto/ model/ repository/ service/` subpackages. Small o
 | `settings` | Runtime settings, editable by admins without a redeploy. |
 | `mail` | Renders localized emails (Thymeleaf, HTML and text) and sends them after commit, with retries. |
 | `storage` | S3 storage, avatar processing and the file proxy. Only active with `STORAGE_ENABLED=true`. |
+| `catalog` | The store's categories and products: the public catalog (`/api/v1/public/shop`), the search engine and its insights, the sitemap data, admin CRUD, product photos, the demo seeder. See [SHOP.md](SHOP.md). |
+| `order` | Cart pricing, checkout, order history, admin order handling and order emails. See [SHOP.md](SHOP.md). |
+| `inventory` | Optional stock management: atomic stock changes, the movement history, adjustments, low-stock alerts, valuation and CSV export. See [SHOP.md](SHOP.md#stock-management-optional). |
 | `note` | The example module: copy it, then delete it. |
 | `shared` | Cross-cutting pieces: typed configuration (`AppProperties`), security, errors, paging, request IDs, locales. |
 
@@ -165,10 +168,16 @@ Without `MAIL_HOST`, emails are written to the log instead.
 ```
 src/routes/
 ├── +layout.ts           loads the public config (app name, flags, settings) from the API
-├── (marketing)/         landing page                                  SSR
+├── (marketing)/         store home, products and search, categories,  SSR
+│                        product page
+│   ├── cart/            the cart (kept in localStorage)               browser only
+│   └── checkout/        address and payment, needs an account         browser only
 ├── (auth)/              login, register, forgot/reset password, verify SSR, guest-only where it matters
-├── (app)/               dashboard, notes, settings                    browser only, signed in
-│   └── admin/           overview, users, settings, audit              browser only, ADMIN
+├── (app)/               dashboard, my orders, notes, settings         browser only, signed in
+│   └── admin/           overview, orders, products, inventory,        browser only, ADMIN
+│                        categories, appearance, users, settings, audit
+├── sitemap.xml/         generated from the catalog
+├── robots.txt/          points to the sitemap
 └── healthz/             container health check
 ```
 
@@ -193,6 +202,7 @@ Route groups (the parenthesized folders) don't appear in URLs. Each group has it
 - Server-side rendering calls the API through `handleFetch` (`hooks.server.ts`):
   - relative `/api/...` requests go straight to `API_INTERNAL_URL`, with a 3-second timeout;
   - this avoids routing back through the public domain, which often hangs inside Docker.
+- Server-rendered store pages use `storeApi(fetch, url)` from `lib/shop/store-api.ts` instead of `api`: the same typed client, but going through SvelteKit's `fetch` so it works during SSR. `loadOrError(...)` is its `callForPage`.
 
 ### Forms
 
@@ -271,7 +281,7 @@ Frontend:
 
 ### Add a runtime setting
 
-1. Add an entry to the `Setting` enum (`backend/.../settings/Settings.kt`) with its key, type, default, whether the frontend may read it, and a description.
+1. Add an entry to the `Setting` enum (`backend/.../settings/Settings.kt`) with its key, type, default, whether the frontend may read it, and a description. Types: `BOOLEAN`, `INTEGER` (optional `min`), `STRING` and `TEXT` (multi-line; `maxLength`, optional `pattern`), `URL` (http(s) only), `COLOR` (`#rrggbb`) and `CHOICE` (one of `options`). Each gets a matching input in the admin.
 2. In the backend, read it with `settings.bool(Setting.X)`, `settings.string(...)` or `settings.int(...)`.
 3. In the frontend (client-visible settings only), read `data.config.settings['your.key']`.
 

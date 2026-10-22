@@ -64,6 +64,15 @@ const MESSAGES: Record<string, () => string> = {
 	'note.not_found': m.error_not_found, // [example:notes]
 	'user.not_found': m.error_not_found,
 	'session.not_found': m.error_not_found,
+	'product.not_found': m.error_product_not_found,
+	'category.not_found': m.error_not_found,
+	'order.not_found': m.error_not_found,
+	'order.out_of_stock': m.error_out_of_stock,
+	'order.product_unavailable': m.error_product_unavailable,
+	'order.price_changed': m.error_price_changed,
+	'order.not_cancellable': m.error_order_not_cancellable,
+	'order.invalid_transition': m.error_order_invalid_transition,
+	'order.payment_method_unavailable': m.error_payment_unavailable,
 	'request.rate_limited': m.error_rate_limited,
 	'request.validation': m.error_validation,
 	'conflict.stale': m.error_stale,
@@ -96,6 +105,10 @@ const FIELD_MESSAGES: Record<string, () => string> = {
 	Size: m.validation_too_long,
 	Incorrect: m.validation_incorrect_password,
 	Mismatch: m.validation_mismatch,
+	Taken: m.validation_taken,
+	CompareAtPrice: m.validation_compare_at,
+	Pattern: m.validation_invalid,
+	Min: m.validation_invalid,
 };
 
 /** Translates a field error returned by the API (Bean Validation constraint names). */

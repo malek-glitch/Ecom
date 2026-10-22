@@ -11,6 +11,8 @@ const i18n: Handle = ({ event, resolve }) =>
 		return resolve(event, {
 			transformPageChunk: ({ html }) =>
 				html.replace('%paraglide.lang%', locale).replace('%paraglide.dir%', getTextDirection(locale)),
+			// openapi-fetch (the typed API client in server-side loads) reads these response headers.
+			filterSerializedResponseHeaders: (name) => name === 'content-length' || name === 'content-type',
 		});
 	});
 

@@ -7,16 +7,18 @@ import org.springframework.transaction.annotation.Transactional
 import tech.astro.liftoff.audit.AuditService
 import tech.astro.liftoff.auth.repository.UserSessionRepository
 import tech.astro.liftoff.auth.repository.UserTokenRepository
+import tech.astro.liftoff.catalog.service.SearchInsightsService
 import tech.astro.liftoff.shared.config.AppProperties
 import java.time.Clock
 import java.time.Duration
 
-/** Nightly cleanup of dead sessions, used/expired email tokens and old audit events. */
+/** Nightly cleanup of dead sessions, used/expired email tokens, old audit events and stale search queries. */
 @Component
 class MaintenanceJob(
     private val sessions: UserSessionRepository,
     private val tokens: UserTokenRepository,
     private val audit: AuditService,
+    private val searches: SearchInsightsService,
     private val props: AppProperties,
     private val clock: Clock,
 ) {
@@ -30,6 +32,10 @@ class MaintenanceJob(
         val removedSessions = sessions.deleteStale(now.minus(keepFor))
         val removedTokens = tokens.deleteStale(now.minus(keepFor))
         val removedEvents = audit.purgeOlderThan(now.minus(props.audit.retention))
-        log.info("Maintenance: removed {} sessions, {} email tokens, {} audit events", removedSessions, removedTokens, removedEvents)
+        val removedSearches = searches.purgeOlderThan(now.minus(Duration.ofDays(180)))
+        log.info(
+            "Maintenance: removed {} sessions, {} email tokens, {} audit events, {} search queries",
+            removedSessions, removedTokens, removedEvents, removedSearches,
+        )
     }
 }

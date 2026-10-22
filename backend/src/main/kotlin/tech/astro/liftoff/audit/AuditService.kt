@@ -32,6 +32,10 @@ class AuditService(
         ctx: ClientContext? = null,
         details: Map<String, Any?> = emptyMap(),
         actorId: UUID? = actor?.id,
+        /** For targets that aren't users (a product, an order...). */
+        targetType: String? = target?.let { "user" },
+        targetId: String? = target?.id?.toString(),
+        targetLabel: String? = target?.email,
     ) {
         events.save(
             AuditEvent(
@@ -39,9 +43,9 @@ class AuditService(
                 actorId = actorId,
                 actorEmail = actor?.email,
                 action = action,
-                targetType = target?.let { "user" },
-                targetId = target?.id?.toString(),
-                targetLabel = target?.email,
+                targetType = targetType,
+                targetId = targetId,
+                targetLabel = targetLabel,
                 ipAddress = ctx?.ipAddress,
                 details = details.takeIf { it.isNotEmpty() }?.let(jsonMapper::writeValueAsString),
             ),

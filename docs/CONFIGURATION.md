@@ -64,7 +64,7 @@ Durations use Spring's format: `30s`, `15m`, `2h`, `30d`.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `STORAGE_ENABLED` | `false` | Turns on uploads (profile photos). Off: the upload buttons are hidden. |
+| `STORAGE_ENABLED` | `false` | Turns on uploads (profile and product photos). Off: the upload buttons are hidden and products show a placeholder. |
 | `STORAGE_ENDPOINT` | `http://localhost:9000` | S3 endpoint. Empty means AWS S3 itself. |
 | `STORAGE_REGION` | `us-east-1` | Region; most S3-compatible servers accept any value. |
 | `STORAGE_BUCKET` | `liftoff` | Bucket, created at startup if missing. |
@@ -76,7 +76,8 @@ Durations use Spring's format: `30s`, `15m`, `2h`, `30d`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `CORS_ALLOWED_ORIGINS` | empty | Comma-separated origins allowed to call the API from a browser on another origin. Not needed when the API and app share a domain (the default setup). Capacitor needs `capacitor://localhost,https://localhost`. |
-| `RATE_LIMIT_ENABLED` | `true` | Per-IP limits on sign-in, sign-up, refresh and email endpoints. |
+| `RATE_LIMIT_ENABLED` | `true` | Per-IP limits on sign-in, sign-up, refresh, email, cart and checkout endpoints. |
+| `SHOP_SEED_DEMO` | `false` (`true` in `.env.example`) | Fills an empty catalog with demo categories and products at startup. Does nothing once a product exists. Keep it off in production. |
 | `SPRING_PROFILES_ACTIVE` | | `prod` in `compose.prod.yaml`. See [Profiles](#profiles). |
 
 ### Frontend
@@ -128,6 +129,7 @@ Spring maps `app.auth.password-reset-ttl` to `APP_AUTH_PASSWORDRESETTTL`: upperc
 | `app.auth.invitation-ttl` (`APP_AUTH_INVITATIONTTL`) | `7d` | Lifetime of invitation links. |
 | `app.storage.create-bucket` (`APP_STORAGE_CREATEBUCKET`) | `true` | Create the bucket at startup. Turn it off when the key can't create buckets. |
 | `app.storage.max-avatar-size` (`APP_STORAGE_MAXAVATARSIZE`) | `5MB` | Largest accepted profile photo. |
+| `app.storage.max-product-image-size` (`APP_STORAGE_MAXPRODUCTIMAGESIZE`) | `8MB` | Largest accepted product photo (also capped by `spring.servlet.multipart.max-file-size`, 10MB). |
 | `app.rate-limit.policies.<name>.capacity` / `.period` (`APP_RATELIMIT_POLICIES_LOGIN_CAPACITY`, `APP_RATELIMIT_POLICIES_LOGIN_PERIOD`) | see below | Override a rate-limit policy. |
 | `app.audit.retention` (`APP_AUDIT_RETENTION`) | `365d` | Audit events older than this are deleted every night. |
 | `app.maintenance.cron` (`APP_MAINTENANCE_CRON`) | `0 17 3 * * *` | When the nightly cleanup runs: expired sessions, used email links, old audit events. |
@@ -141,7 +143,10 @@ Default rate-limit policies, per client IP:
 | `email` | 5 per 15 minutes | "send the link again", "forgot password" |
 | `refresh` | 60 per minute | token refresh |
 | `google` | 20 per minute | Google sign-in |
-| `upload` | 20 per 10 minutes | profile photo |
+| `upload` | 20 per 10 minutes | profile and product photos |
+| `cart` | 120 per minute | cart pricing (`/public/shop/cart/quote`) |
+| `checkout` | 10 per 10 minutes | placing an order |
+| `search` | 240 per minute | search suggestions while typing (`/public/shop/suggest`) |
 
 ## Runtime settings
 
@@ -153,6 +158,35 @@ A setting nobody has changed uses its default.
 | `auth.registrationEnabled` | `true` | Whether new people can create an account. Turn it off for an invite-only app. |
 | `app.announcement` | empty | A banner shown to every signed-in user. |
 | `app.supportEmail` | empty | Contact address in the public footer. |
+| `shop.currency` | `EUR` | ISO 4217 code of the store currency. Prices are stored in its minor units (cents for EUR, whole yen for JPY), so pick it before entering prices. Existing orders keep their own currency. |
+| `shop.shippingFlatCents` | `500` | Shipping fee per order, in minor units (500 = 5.00). `0` ships everything free. |
+| `shop.freeShippingThresholdCents` | `5000` | Orders from this subtotal ship free. `0` turns the offer off. |
+| `shop.bankTransferInstructions` | empty | Bank details shown to customers who pay by transfer. Empty hides that payment option; cash on delivery is always offered. |
+| `inventory.enabled` | `true` | The stock module. On: orders take items out of stock and sold-out products can't be ordered. Off: every product can always be ordered and no stock is shown. Also switchable on **Store → Inventory**. |
+| `inventory.lowStockThreshold` | `5` | Products at or below this many units count as low stock (customers see "only 3 left", admins get alerts). Each product can override it. |
+| `inventory.lowStockEmails` | `true` | Email the administrators when a product runs low or sells out. |
+
+The look and the texts of the store are settings too. They are easiest to edit in
+**Store → Appearance**, which shows a live preview; **App settings** lists them as well.
+
+| Key | Default | Effect |
+|---|---|---|
+| `theme.brandColor` | empty | Colour of buttons, links and highlights, as `#rrggbb`. Text on it turns white or black to stay readable, and dark mode gets a lighter shade when needed. Empty: the neutral theme. |
+| `theme.radius` | `medium` | Corner roundness: `none`, `small`, `medium`, `large` or `full`. |
+| `theme.headingFont` | `sans` | Heading typeface: `sans`, `serif` or `mono` (system fonts, nothing downloaded). |
+| `theme.productImageRatio` | `square` | Shape of product photos: `square`, `portrait` (3:4) or `landscape` (4:3). |
+| `store.logoUrl` | empty | Logo image in the header and footer. Empty: an icon and the app name. |
+| `store.announcementBar` | empty | Short message in a bar above the store header. |
+| `store.heroKicker`, `store.heroTitle`, `store.heroSubtitle` | empty | Home page texts. Empty uses the built-in text, translated into every language. |
+| `store.heroImageUrl` | empty | Picture next to the home page title. |
+| `store.showPerks` | `true` | Delivery, payment and returns highlights on the home page. |
+| `store.footerAbout` | empty | A few words about the store in the footer. |
+| `store.instagramUrl`, `store.facebookUrl`, `store.tiktokUrl`, `store.xUrl` | empty | Social links in the footer (also given to search engines). |
+| `seo.metaDescription` | empty | The home page description in search results. Empty: the home page subtitle. |
+| `seo.shareImageUrl` | empty | Picture for link previews of pages without their own photo (1200 × 630 px). |
+
+URL settings only accept `http(s)://` addresses, colours only `#rrggbb`, and choices only their
+listed values, both in the API and again in the browser.
 
 To add your own, see [Add a runtime setting](ARCHITECTURE.md#add-a-runtime-setting).
 

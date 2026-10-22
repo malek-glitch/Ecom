@@ -109,3 +109,5 @@ app:
     public-base-url: ${STORAGE_PUBLIC_BASE_URL:}
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
+  shop:
+    seed-demo: ${SHOP_SEED_DEMO:false}

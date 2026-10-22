@@ -12,7 +12,7 @@ import javax.imageio.ImageIO
 class ProcessedImage(val bytes: ByteArray, val contentType: String, val extension: String)
 
 /**
- * Turns an uploaded picture into a square avatar. The format is checked from the file's
+ * Turns an uploaded picture into a square avatar or a product photo. The format is checked from the file's
  * magic bytes (never the client's Content-Type), dimensions are checked before decoding
  * (decompression bombs), and re-encoding drops EXIF data such as GPS position.
  */
@@ -28,6 +28,26 @@ class ImageProcessor {
         Thumbnails.of(image)
             .crop(Positions.CENTER)
             .size(side, side)
+            .apply { if (!hasAlpha) imageType(BufferedImage.TYPE_INT_RGB) }
+            .outputFormat(if (hasAlpha) "png" else "jpg")
+            .apply { if (!hasAlpha) outputQuality(0.85) }
+            .toOutputStream(output)
+        return if (hasAlpha) {
+            ProcessedImage(output.toByteArray(), "image/png", "png")
+        } else {
+            ProcessedImage(output.toByteArray(), "image/jpeg", "jpg")
+        }
+    }
+
+    /** Shrinks a product photo to fit in [maxSide]×[maxSide], keeping its proportions (never enlarges). */
+    fun toProductImage(bytes: ByteArray, maxSide: Int = PRODUCT_IMAGE_SIZE): ProcessedImage {
+        if (sniff(bytes) == null) throw invalid()
+        val image = decode(bytes)
+        val hasAlpha = image.colorModel.hasAlpha()
+        val output = ByteArrayOutputStream()
+        Thumbnails.of(image)
+            .size(minOf(maxSide, image.width), minOf(maxSide, image.height))
+            .keepAspectRatio(true)
             .apply { if (!hasAlpha) imageType(BufferedImage.TYPE_INT_RGB) }
             .outputFormat(if (hasAlpha) "png" else "jpg")
             .apply { if (!hasAlpha) outputQuality(0.85) }
@@ -78,6 +98,7 @@ class ImageProcessor {
 
     companion object {
         const val AVATAR_SIZE = 512
+        const val PRODUCT_IMAGE_SIZE = 1200
         const val MAX_SIDE = 10_000
         const val MAX_PIXELS = 40_000_000L
     }

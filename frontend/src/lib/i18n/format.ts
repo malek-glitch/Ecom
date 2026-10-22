@@ -17,6 +17,29 @@ export function formatNumber(value: number) {
 	return new Intl.NumberFormat(intlLocale()).format(value);
 }
 
+/** How many decimals a currency uses: 2 for EUR, 0 for JPY, 3 for TND. */
+export function currencyDigits(currency: string): number {
+	try {
+		return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2;
+	} catch {
+		return 2;
+	}
+}
+
+/**
+ * Money from the API, which counts in minor units (cents): `formatMoney(1250, 'EUR')` → "12,50 €".
+ * An unknown currency code falls back to "12.50 XYZ" instead of throwing.
+ */
+export function formatMoney(minor: number, currency: string) {
+	const digits = currencyDigits(currency);
+	const amount = minor / 10 ** digits;
+	try {
+		return new Intl.NumberFormat(intlLocale(), { style: 'currency', currency }).format(amount);
+	} catch {
+		return `${amount.toFixed(digits)} ${currency}`;
+	}
+}
+
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 	['year', 31_536_000],
 	['month', 2_592_000],

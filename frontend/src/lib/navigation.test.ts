@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { intParam, safeRedirect, withQuery } from './navigation';
+import { intParam, queryWithout, safeRedirect, withQuery } from './navigation';
 
 describe('safeRedirect', () => {
 	it.each([
@@ -26,5 +26,13 @@ describe('query helpers', () => {
 		expect(intParam(new URL('http://localhost/?page=3'), 'page')).toBe(3);
 		expect(intParam(new URL('http://localhost/?page=-1'), 'page')).toBe(0);
 		expect(intParam(new URL('http://localhost/?page=abc'), 'page')).toBe(0);
+	});
+});
+
+describe('queryWithout', () => {
+	it('drops parameters and keeps the rest', () => {
+		const url = new URL('https://shop.example/products?q=mug&page=2&category=kitchen');
+		expect(queryWithout(url, 'page', 'category')).toBe('?q=mug');
+		expect(queryWithout(url, 'q', 'page', 'category')).toBe('');
 	});
 });

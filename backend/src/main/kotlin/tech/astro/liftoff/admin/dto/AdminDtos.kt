@@ -82,6 +82,8 @@ data class AdminSettingResponse(
     val default: String,
     val clientVisible: Boolean,
     val description: String,
+    /** The allowed values of a CHOICE setting; empty otherwise. */
+    val options: List<String>,
 )
 
 data class UpdateSettingRequest(

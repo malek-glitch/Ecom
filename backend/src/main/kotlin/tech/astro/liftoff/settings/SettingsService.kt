@@ -18,6 +18,8 @@ data class SettingView(
     val default: String,
     val clientVisible: Boolean,
     val description: String,
+    /** The allowed values of a CHOICE setting. */
+    val options: List<String> = emptyList(),
 )
 
 /**
@@ -61,11 +63,28 @@ class SettingsService(
         when (setting.type) {
             SettingType.BOOLEAN -> normalized.toBooleanStrictOrNull()
                 ?: throw FieldValidationException("value", "Boolean", "must be true or false")
-            SettingType.INTEGER -> normalized.toIntOrNull()
-                ?: throw FieldValidationException("value", "Integer", "must be a whole number")
-            SettingType.STRING -> if (normalized.length > 2000) {
-                throw FieldValidationException("value", "Size", "must be at most 2000 characters")
+            SettingType.INTEGER -> {
+                val number = normalized.toIntOrNull() ?: throw FieldValidationException("value", "Integer", "must be a whole number")
+                if (setting.min != null && number < setting.min) {
+                    throw FieldValidationException("value", "Min", "must be at least ${setting.min}")
+                }
             }
+            SettingType.STRING, SettingType.TEXT -> checkLength(setting, normalized)
+            SettingType.URL -> {
+                checkLength(setting, normalized)
+                if (normalized.isNotEmpty() && !URL.matches(normalized)) {
+                    throw FieldValidationException("value", "Url", "must be an http(s) address")
+                }
+            }
+            SettingType.COLOR -> if (normalized.isNotEmpty() && !COLOR.matches(normalized)) {
+                throw FieldValidationException("value", "Color", "must be a colour like #2563eb")
+            }
+            SettingType.CHOICE -> if (normalized !in setting.options) {
+                throw FieldValidationException("value", "Choice", "must be one of ${setting.options.joinToString()}")
+            }
+        }
+        if (setting.pattern != null && !setting.pattern.matches(normalized)) {
+            throw FieldValidationException("value", "Pattern", "has an invalid format")
         }
         val previous = raw(setting)
         val row = repository.findById(key).orElse(null)
@@ -83,6 +102,12 @@ class SettingsService(
     }
 
 
+    private fun checkLength(setting: Setting, value: String) {
+        if (value.length > setting.maxLength) {
+            throw FieldValidationException("value", "Size", "must be at most ${setting.maxLength} characters")
+        }
+    }
+
     private fun view(setting: Setting) = SettingView(
         key = setting.key,
         type = setting.type,
@@ -90,11 +115,17 @@ class SettingsService(
         default = setting.default,
         clientVisible = setting.clientVisible,
         description = setting.description,
+        options = setting.options,
     )
 
     private fun typed(setting: Setting): Any = when (setting.type) {
         SettingType.BOOLEAN -> bool(setting)
         SettingType.INTEGER -> int(setting)
-        SettingType.STRING -> string(setting)
+        else -> string(setting)
+    }
+
+    private companion object {
+        val URL = Regex("^https?://[^\\s\"'<>]+$")
+        val COLOR = Regex("^#[0-9a-fA-F]{6}$")
     }
 }

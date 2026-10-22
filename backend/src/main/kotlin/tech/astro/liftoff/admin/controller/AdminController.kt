@@ -57,5 +57,5 @@ class AdminController(
     }
 
     private fun toResponse(view: SettingView) =
-        AdminSettingResponse(view.key, view.type, view.value, view.default, view.clientVisible, view.description)
+        AdminSettingResponse(view.key, view.type, view.value, view.default, view.clientVisible, view.description, view.options)
 }
