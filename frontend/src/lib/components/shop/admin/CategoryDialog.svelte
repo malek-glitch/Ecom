@@ -31,6 +31,14 @@
 				error: () => m.validation_slug(),
 			}),
 		description: z.string().max(2000, { error: () => m.validation_too_long() }),
+		seoTitle: z
+			.string()
+			.trim()
+			.max(70, { error: () => m.validation_too_long() }),
+		seoDescription: z
+			.string()
+			.trim()
+			.max(200, { error: () => m.validation_too_long() }),
 		position: z.string().refine((value) => /^\d{1,5}$/.test(value.trim()) && Number(value) <= 10_000, {
 			error: () => m.validation_invalid(),
 		}),
@@ -43,6 +51,8 @@
 			slug: category?.slug ?? '',
 			description: category?.description ?? '',
 			position: String(category?.position ?? 0),
+			seoTitle: category?.seoTitle ?? '',
+			seoDescription: category?.seoDescription ?? '',
 		}),
 		onSubmit: async (values) => {
 			const body = { ...values, position: Number(values.position) };
@@ -59,7 +69,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="sm:max-w-lg">
+	<Dialog.Content class="max-h-[90svh] overflow-y-auto sm:max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>{category ? m.category_edit() : m.category_new()}</Dialog.Title>
 		</Dialog.Header>
@@ -108,6 +118,28 @@
 						<Field.Error errors={form.fieldErrors('position')} />
 					</Field.Field>
 				</div>
+				<Field.Field data-invalid={!!form.errors.seoTitle}>
+					<Field.Label for="category-seo-title">{m.seo_title()}</Field.Label>
+					<Input
+						id="category-seo-title"
+						bind:value={form.values.seoTitle}
+						placeholder={form.values.name}
+						maxlength={70}
+					/>
+					<Field.Error errors={form.fieldErrors('seoTitle')} />
+				</Field.Field>
+				<Field.Field data-invalid={!!form.errors.seoDescription}>
+					<Field.Label for="category-seo-description">{m.seo_description()}</Field.Label>
+					<Textarea
+						id="category-seo-description"
+						bind:value={form.values.seoDescription}
+						placeholder={form.values.description.slice(0, 160)}
+						maxlength={200}
+						class="min-h-16"
+					/>
+					<Field.Description>{m.seo_section_hint()}</Field.Description>
+					<Field.Error errors={form.fieldErrors('seoDescription')} />
+				</Field.Field>
 			</Field.Group>
 			<Dialog.Footer>
 				<Button type="button" variant="outline" onclick={() => (open = false)}>{m.common_cancel()}</Button>

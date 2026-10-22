@@ -104,7 +104,7 @@
 	] as const;
 </script>
 
-<Seo title={m.checkout_title()} />
+<Seo title={m.checkout_title()} noindex />
 
 <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
 	<h1 class="mb-8 text-3xl font-semibold tracking-tight">{m.checkout_title()}</h1>

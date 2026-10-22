@@ -9,6 +9,7 @@
 	import UserPlus from '@lucide/svelte/icons/user-plus';
 	import UserX from '@lucide/svelte/icons/user-x';
 	import Users from '@lucide/svelte/icons/users';
+	import SearchInsightsCard from '$lib/components/admin/SearchInsightsCard.svelte';
 	import SignupChart from '$lib/components/admin/SignupChart.svelte';
 	import PageHeader from '$lib/components/app/PageHeader.svelte';
 	import Seo from '$lib/components/app/Seo.svelte';
@@ -94,3 +95,19 @@
 		<SignupChart data={data.stats.signupsPerDay} label={m.admin_signups_title()} />
 	</Card.Content>
 </Card.Root>
+
+<div class="mt-4 grid gap-4 lg:grid-cols-2">
+	<SearchInsightsCard
+		title={m.insights_top_title()}
+		description={m.insights_top_body()}
+		rows={data.searches.top}
+		empty={m.insights_empty()}
+	/>
+	<SearchInsightsCard
+		title={m.insights_missing_title()}
+		description={m.insights_missing_body()}
+		rows={data.searches.withoutResults}
+		empty={m.insights_missing_empty()}
+		missing
+	/>
+</div>

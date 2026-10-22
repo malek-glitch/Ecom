@@ -36,6 +36,14 @@ export const productSchema = (currency: string) =>
 			active: z.boolean(),
 			featured: z.boolean(),
 			categoryId: z.string(),
+			seoTitle: z
+				.string()
+				.trim()
+				.max(70, { error: () => m.validation_too_long() }),
+			seoDescription: z
+				.string()
+				.trim()
+				.max(200, { error: () => m.validation_too_long() }),
 		})
 		.refine(
 			(values) => {
@@ -59,6 +67,8 @@ export const emptyProduct = (): ProductValues => ({
 	active: true,
 	featured: false,
 	categoryId: '',
+	seoTitle: '',
+	seoDescription: '',
 });
 
 export const productValues = (product: AdminProduct, currency: string): ProductValues => ({
@@ -72,6 +82,8 @@ export const productValues = (product: AdminProduct, currency: string): ProductV
 	active: product.active,
 	featured: product.featured,
 	categoryId: product.category?.id ?? '',
+	seoTitle: product.seoTitle ?? '',
+	seoDescription: product.seoDescription ?? '',
 });
 
 export const toRequest = (values: ProductValues, currency: string): SaveProductRequest => ({
@@ -85,4 +97,6 @@ export const toRequest = (values: ProductValues, currency: string): SaveProductR
 	active: values.active,
 	featured: values.featured,
 	categoryId: values.categoryId || null,
+	seoTitle: values.seoTitle,
+	seoDescription: values.seoDescription,
 });

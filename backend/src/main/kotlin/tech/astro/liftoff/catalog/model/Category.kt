@@ -24,6 +24,14 @@ class Category(
     /** Sort order in menus, lowest first. */
     @Column(name = "position", nullable = false)
     var position: Int = 0,
+
+    /** Title for search engines; null means the name. */
+    @Column(name = "seo_title", length = 70)
+    var seoTitle: String? = null,
+
+    /** Description for search engines; null means the start of the description. */
+    @Column(name = "seo_description", length = 200)
+    var seoDescription: String? = null,
 ) : BaseEntity() {
 
     @CreationTimestamp

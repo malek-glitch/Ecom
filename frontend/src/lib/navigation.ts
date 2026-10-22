@@ -26,3 +26,11 @@ export function intParam(url: URL, name: string, fallback = 0): number {
 	const value = Number.parseInt(url.searchParams.get(name) ?? '', 10);
 	return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
+
+/** The query string of `url` ("?a=1", or "") without the given parameters, to reuse on another path. */
+export function queryWithout(url: URL, ...drop: string[]): string {
+	const params = new URLSearchParams(url.searchParams);
+	for (const key of drop) params.delete(key);
+	const query = params.toString();
+	return query ? `?${query}` : '';
+}

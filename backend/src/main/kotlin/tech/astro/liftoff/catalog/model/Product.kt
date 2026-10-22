@@ -56,6 +56,14 @@ class Product(
     /** Object-storage key of the main picture (only when storage is enabled). */
     @Column(name = "image_key", length = 512)
     var imageKey: String? = null,
+
+    /** Title for search engines; null means the name. */
+    @Column(name = "seo_title", length = 70)
+    var seoTitle: String? = null,
+
+    /** Description for search engines; null means the start of the description. */
+    @Column(name = "seo_description", length = 200)
+    var seoDescription: String? = null,
 ) : BaseEntity() {
 
     @CreationTimestamp

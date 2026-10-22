@@ -9,7 +9,10 @@ right-to-left) and a production setup work on day one, so a new shop starts with
 
 **Online store** ([docs/SHOP.md](docs/SHOP.md))
 
-- Server-rendered storefront: home page, catalog with search, categories, sorting and pagination, product pages.
+- Server-rendered storefront: home page, category pages, product pages with related products, a header with category menu and a mobile menu.
+- Smart search in PostgreSQL: suggestions while typing, typo tolerance, accent-insensitive prefix matching, relevance ranking, "did you mean", filters with counts, and insights on what shoppers search for.
+- SEO: canonical URLs, Open Graph and Twitter tags, JSON-LD (Product, BreadcrumbList, Organization, search box), a live `sitemap.xml` and `robots.txt`, SEO fields per product and category.
+- Configurable design without a rebuild: brand colour, corners, heading font, photo shape, logo, announcement bar, home page texts and picture, footer and social links, with a live preview.
 - A cart that works without an account, priced by the server on every change.
 - Checkout with shipping address and payment by cash on delivery or bank transfer (card payments are a documented extension).
 - Stock taken atomically at checkout, so the last item can't be sold twice; cancelling restocks.

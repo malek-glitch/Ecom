@@ -36,7 +36,7 @@ features use `controller/ dto/ model/ repository/ service/` subpackages. Small o
 | `settings` | Runtime settings, editable by admins without a redeploy. |
 | `mail` | Renders localized emails (Thymeleaf, HTML and text) and sends them after commit, with retries. |
 | `storage` | S3 storage, avatar processing and the file proxy. Only active with `STORAGE_ENABLED=true`. |
-| `catalog` | The store's categories and products: the public catalog (`/api/v1/public/shop`), admin CRUD, product photos, the demo seeder. See [SHOP.md](SHOP.md). |
+| `catalog` | The store's categories and products: the public catalog (`/api/v1/public/shop`), the search engine and its insights, the sitemap data, admin CRUD, product photos, the demo seeder. See [SHOP.md](SHOP.md). |
 | `order` | Cart pricing, checkout with atomic stock updates, order history, admin order handling and order emails. See [SHOP.md](SHOP.md). |
 | `note` | The example module: copy it, then delete it. |
 | `shared` | Cross-cutting pieces: typed configuration (`AppProperties`), security, errors, paging, request IDs, locales. |
@@ -167,13 +167,16 @@ Without `MAIL_HOST`, emails are written to the log instead.
 ```
 src/routes/
 ├── +layout.ts           loads the public config (app name, flags, settings) from the API
-├── (marketing)/         store home, products, product page            SSR
+├── (marketing)/         store home, products and search, categories,  SSR
+│                        product page
 │   ├── cart/            the cart (kept in localStorage)               browser only
 │   └── checkout/        address and payment, needs an account         browser only
 ├── (auth)/              login, register, forgot/reset password, verify SSR, guest-only where it matters
 ├── (app)/               dashboard, my orders, notes, settings         browser only, signed in
 │   └── admin/           overview, orders, products, categories,       browser only, ADMIN
-│                        users, settings, audit
+│                        appearance, users, settings, audit
+├── sitemap.xml/         generated from the catalog
+├── robots.txt/          points to the sitemap
 └── healthz/             container health check
 ```
 
@@ -277,7 +280,7 @@ Frontend:
 
 ### Add a runtime setting
 
-1. Add an entry to the `Setting` enum (`backend/.../settings/Settings.kt`) with its key, type, default, whether the frontend may read it, and a description.
+1. Add an entry to the `Setting` enum (`backend/.../settings/Settings.kt`) with its key, type, default, whether the frontend may read it, and a description. Types: `BOOLEAN`, `INTEGER` (optional `min`), `STRING` and `TEXT` (multi-line; `maxLength`, optional `pattern`), `URL` (http(s) only), `COLOR` (`#rrggbb`) and `CHOICE` (one of `options`). Each gets a matching input in the admin.
 2. In the backend, read it with `settings.bool(Setting.X)`, `settings.string(...)` or `settings.int(...)`.
 3. In the frontend (client-visible settings only), read `data.config.settings['your.key']`.
 

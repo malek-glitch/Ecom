@@ -22,9 +22,11 @@ import tech.astro.liftoff.catalog.dto.CategoryResponse
 import tech.astro.liftoff.catalog.dto.ProductStatusFilter
 import tech.astro.liftoff.catalog.dto.SaveCategoryRequest
 import tech.astro.liftoff.catalog.dto.SaveProductRequest
+import tech.astro.liftoff.catalog.dto.SearchInsights
 import tech.astro.liftoff.catalog.service.CategoryService
 import tech.astro.liftoff.catalog.service.ProductImageService
 import tech.astro.liftoff.catalog.service.ProductService
+import tech.astro.liftoff.catalog.service.SearchInsightsService
 import tech.astro.liftoff.shared.security.CurrentUser
 import tech.astro.liftoff.shared.security.RateLimited
 import tech.astro.liftoff.shared.web.PageResponse
@@ -41,6 +43,7 @@ class AdminCatalogController(
     private val categories: CategoryService,
     private val images: ProductImageService,
     private val users: UserService,
+    private val insights: SearchInsightsService,
 ) {
     /** Includes inactive products. `q` searches name, description and SKU. Newest first. */
     @GetMapping("/products")
@@ -76,6 +79,10 @@ class AdminCatalogController(
 
     @DeleteMapping("/products/{id}/image")
     fun deleteImage(@PathVariable id: UUID): AdminProductResponse = images.remove(id)
+
+    /** Popular searches and searches that found nothing, over the last 30 days. */
+    @GetMapping("/search-insights")
+    fun searchInsights(): SearchInsights = insights.insights()
 
     /** Every category, with its total number of products (active or not). */
     @GetMapping("/categories")

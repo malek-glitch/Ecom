@@ -3,6 +3,7 @@ import FolderTree from '@lucide/svelte/icons/folder-tree';
 import Gauge from '@lucide/svelte/icons/gauge';
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import NotebookPen from '@lucide/svelte/icons/notebook-pen'; // [example:notes]
+import Palette from '@lucide/svelte/icons/palette';
 import Package from '@lucide/svelte/icons/package';
 import Receipt from '@lucide/svelte/icons/receipt';
 import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
@@ -45,6 +46,7 @@ export const NAVIGATION: NavGroup[] = [
 			{ href: '/admin/orders', label: m.nav_admin_orders, icon: ShoppingCart },
 			{ href: '/admin/products', label: m.nav_admin_products, icon: Package },
 			{ href: '/admin/categories', label: m.nav_admin_categories, icon: FolderTree },
+			{ href: '/admin/appearance', label: m.nav_admin_appearance, icon: Palette },
 		],
 	},
 	{

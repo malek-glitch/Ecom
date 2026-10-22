@@ -56,6 +56,7 @@ class RateLimitInterceptor(private val props: AppProperties) : HandlerIntercepto
             "upload" to Policy(20, Duration.ofMinutes(10)),
             "checkout" to Policy(10, Duration.ofMinutes(10)),
             "cart" to Policy(120, Duration.ofMinutes(1)),
+            "search" to Policy(240, Duration.ofMinutes(1)),
         )
     }
 }

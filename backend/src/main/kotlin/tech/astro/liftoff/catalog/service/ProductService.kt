@@ -1,6 +1,5 @@
 package tech.astro.liftoff.catalog.service
 
-import jakarta.persistence.criteria.JoinType
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -13,11 +12,12 @@ import tech.astro.liftoff.audit.AuditActions
 import tech.astro.liftoff.audit.AuditService
 import tech.astro.liftoff.catalog.dto.AdminProductResponse
 import tech.astro.liftoff.catalog.dto.ProductDetail
-import tech.astro.liftoff.catalog.dto.ProductSort
 import tech.astro.liftoff.catalog.dto.ProductStatusFilter
-import tech.astro.liftoff.catalog.dto.ProductSummary
 import tech.astro.liftoff.catalog.dto.SaveProductRequest
 import tech.astro.liftoff.catalog.dto.ShopHome
+import tech.astro.liftoff.catalog.dto.SitemapCategory
+import tech.astro.liftoff.catalog.dto.SitemapEntries
+import tech.astro.liftoff.catalog.dto.SitemapProduct
 import tech.astro.liftoff.catalog.model.Category
 import tech.astro.liftoff.catalog.model.Product
 import tech.astro.liftoff.catalog.repository.ProductRepository
@@ -27,7 +27,6 @@ import tech.astro.liftoff.shared.error.FieldValidationException
 import tech.astro.liftoff.shared.error.NotFoundException
 import tech.astro.liftoff.shared.persistence.LIKE_ESCAPE
 import tech.astro.liftoff.shared.persistence.containsPattern
-import tech.astro.liftoff.shared.web.Paging
 import tech.astro.liftoff.storage.StorageObjectsOrphaned
 import tech.astro.liftoff.user.model.User
 import java.util.UUID
@@ -50,20 +49,31 @@ class ProductService(
         categories = categories.list(),
     )
 
-    /** Active products only. [categorySlug] narrows to one category; [query] searches names and descriptions. */
     @Transactional(readOnly = true)
-    fun search(query: String?, categorySlug: String?, sort: ProductSort, page: Int, size: Int): Page<ProductSummary> {
-        var spec = isActive()
-        if (!categorySlug.isNullOrBlank()) {
-            spec = spec.and { root, _, cb -> cb.equal(root.join<Product, Category>("category", JoinType.INNER).get<String>("slug"), categorySlug) }
-        }
-        if (!query.isNullOrBlank()) spec = spec.and(matches(query))
-        return products.findAll(spec, Paging.of(page, size, sort.toSort())).map(mapper::summary)
+    fun get(slug: String): ProductDetail {
+        val product = products.findBySlugAndActiveTrue(slug) ?: throw notFound()
+        return mapper.detail(product, related(product))
     }
 
+    /** Up to four other products: same category first (featured, then newest), topped up with the newest. */
+    private fun related(product: Product): List<Product> {
+        val newest = Sort.by(Sort.Order.desc("featured"), Sort.Order.desc("createdAt"))
+        val others = isActive().and { root, _, cb -> cb.notEqual(root.get<UUID>("id"), product.id) }
+        val sameCategory = product.category?.let { category ->
+            products.findAll(others.and { root, _, cb -> cb.equal(root.get<Category>("category").get<UUID>("id"), category.id) }, PageRequest.of(0, RELATED, newest)).content
+        }.orEmpty()
+        if (sameCategory.size >= RELATED) return sameCategory
+        val exclude = sameCategory.map { it.id }.toSet()
+        val fill = products.findAll(others, PageRequest.of(0, RELATED * 2, newest)).content.filter { it.id !in exclude }
+        return (sameCategory + fill).take(RELATED)
+    }
+
+    /** Every visible product and category, for sitemap.xml. */
     @Transactional(readOnly = true)
-    fun get(slug: String): ProductDetail =
-        products.findBySlugAndActiveTrue(slug)?.let(mapper::detail) ?: throw notFound()
+    fun sitemap(): SitemapEntries = SitemapEntries(
+        products = products.findAllByActiveTrueOrderByUpdatedAtDesc().map { SitemapProduct(it.slug, it.updatedAt, mapper.imageUrl(it.imageKey)) },
+        categories = categories.list().filter { it.productCount > 0 }.map { SitemapCategory(it.slug, it.updatedAt) },
+    )
 
     // ------------------------------------------------------------------ admin
 
@@ -147,6 +157,8 @@ class ProductService(
         product.active = request.active
         product.featured = request.featured
         product.category = request.categoryId?.let(categories::load)
+        product.seoTitle = request.seoTitle.trim().ifEmpty { null }
+        product.seoDescription = request.seoDescription.trim().ifEmpty { null }
     }
 
     private fun resolveSlug(request: SaveProductRequest, current: Product?): String {
@@ -172,11 +184,8 @@ class ProductService(
         }
     }
 
-    private fun ProductSort.toSort(): Sort = when (this) {
-        ProductSort.NEWEST -> Sort.by(Sort.Direction.DESC, "createdAt")
-        ProductSort.PRICE_ASC -> Sort.by(Sort.Order.asc("priceCents"), Sort.Order.asc("name"))
-        ProductSort.PRICE_DESC -> Sort.by(Sort.Order.desc("priceCents"), Sort.Order.asc("name"))
-        ProductSort.NAME -> Sort.by(Sort.Direction.ASC, "name")
+    private companion object {
+        const val RELATED = 4
     }
 
     private fun notFound() = NotFoundException("product.not_found", "Product not found")

@@ -147,6 +147,7 @@ Default rate-limit policies, per client IP:
 | `upload` | 20 per 10 minutes | profile and product photos |
 | `cart` | 120 per minute | cart pricing (`/public/shop/cart/quote`) |
 | `checkout` | 10 per 10 minutes | placing an order |
+| `search` | 240 per minute | search suggestions while typing (`/public/shop/suggest`) |
 
 ## Runtime settings
 
@@ -162,6 +163,28 @@ A setting nobody has changed uses its default.
 | `shop.shippingFlatCents` | `500` | Shipping fee per order, in minor units (500 = 5.00). `0` ships everything free. |
 | `shop.freeShippingThresholdCents` | `5000` | Orders from this subtotal ship free. `0` turns the offer off. |
 | `shop.bankTransferInstructions` | empty | Bank details shown to customers who pay by transfer. Empty hides that payment option; cash on delivery is always offered. |
+
+The look and the texts of the store are settings too. They are easiest to edit in
+**Store → Appearance**, which shows a live preview; **App settings** lists them as well.
+
+| Key | Default | Effect |
+|---|---|---|
+| `theme.brandColor` | empty | Colour of buttons, links and highlights, as `#rrggbb`. Text on it turns white or black to stay readable, and dark mode gets a lighter shade when needed. Empty: the neutral theme. |
+| `theme.radius` | `medium` | Corner roundness: `none`, `small`, `medium`, `large` or `full`. |
+| `theme.headingFont` | `sans` | Heading typeface: `sans`, `serif` or `mono` (system fonts, nothing downloaded). |
+| `theme.productImageRatio` | `square` | Shape of product photos: `square`, `portrait` (3:4) or `landscape` (4:3). |
+| `store.logoUrl` | empty | Logo image in the header and footer. Empty: an icon and the app name. |
+| `store.announcementBar` | empty | Short message in a bar above the store header. |
+| `store.heroKicker`, `store.heroTitle`, `store.heroSubtitle` | empty | Home page texts. Empty uses the built-in text, translated into every language. |
+| `store.heroImageUrl` | empty | Picture next to the home page title. |
+| `store.showPerks` | `true` | Delivery, payment and returns highlights on the home page. |
+| `store.footerAbout` | empty | A few words about the store in the footer. |
+| `store.instagramUrl`, `store.facebookUrl`, `store.tiktokUrl`, `store.xUrl` | empty | Social links in the footer (also given to search engines). |
+| `seo.metaDescription` | empty | The home page description in search results. Empty: the home page subtitle. |
+| `seo.shareImageUrl` | empty | Picture for link previews of pages without their own photo (1200 × 630 px). |
+
+URL settings only accept `http(s)://` addresses, colours only `#rrggbb`, and choices only their
+listed values, both in the API and again in the browser.
 
 To add your own, see [Add a runtime setting](ARCHITECTURE.md#add-a-runtime-setting).
 

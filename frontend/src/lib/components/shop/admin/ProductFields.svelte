@@ -8,6 +8,7 @@
 	import type { Form } from '$lib/forms/form.svelte';
 	import { m } from '$lib/paraglide/messages';
 	import type { ProductValues } from './product-schema';
+	import SearchPreview from './SearchPreview.svelte';
 
 	/** Shared by the "new product" page and the edit page. */
 	let {
@@ -149,4 +150,49 @@
 			<Field.Description>{m.product_field_featured_hint()}</Field.Description>
 		</Field.Content>
 	</Field.Field>
+
+	<Field.Set>
+		<Field.Legend>{m.seo_section()}</Field.Legend>
+		<Field.Description>{m.seo_section_hint()}</Field.Description>
+		<Field.Group>
+			<Field.Field data-invalid={!!form.errors.seoTitle}>
+				<Field.Label for="{idPrefix}-seo-title">
+					{m.seo_title()}
+					<span class="ms-auto text-xs font-normal text-muted-foreground tabular-nums"
+						>{form.values.seoTitle.length}/70</span
+					>
+				</Field.Label>
+				<Input
+					id="{idPrefix}-seo-title"
+					bind:value={form.values.seoTitle}
+					placeholder={form.values.name}
+					maxlength={70}
+					aria-invalid={!!form.errors.seoTitle}
+				/>
+				<Field.Error errors={form.fieldErrors('seoTitle')} />
+			</Field.Field>
+			<Field.Field data-invalid={!!form.errors.seoDescription}>
+				<Field.Label for="{idPrefix}-seo-description">
+					{m.seo_description()}
+					<span class="ms-auto text-xs font-normal text-muted-foreground tabular-nums"
+						>{form.values.seoDescription.length}/200</span
+					>
+				</Field.Label>
+				<Textarea
+					id="{idPrefix}-seo-description"
+					bind:value={form.values.seoDescription}
+					placeholder={form.values.description.slice(0, 160)}
+					maxlength={200}
+					class="min-h-16"
+					aria-invalid={!!form.errors.seoDescription}
+				/>
+				<Field.Error errors={form.fieldErrors('seoDescription')} />
+			</Field.Field>
+			<SearchPreview
+				title={form.values.seoTitle || form.values.name || m.product_field_name()}
+				path="/products/{form.values.slug || '…'}"
+				description={(form.values.seoDescription || form.values.description).replace(/\s+/g, ' ')}
+			/>
+		</Field.Group>
+	</Field.Set>
 </Field.Group>

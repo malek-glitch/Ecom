@@ -452,6 +452,38 @@ export interface paths {
         patch: operations["update_2"];
         trace?: never;
     };
+    "/api/v1/public/shop/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["suggest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shop/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sitemap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/shop/products": {
         parameters: {
             query?: never;
@@ -508,6 +540,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["categories_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shop/categories/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["category"];
         put?: never;
         post?: never;
         delete?: never;
@@ -604,6 +652,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["stats_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shop/search-insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["searchInsights"];
         put?: never;
         post?: never;
         delete?: never;
@@ -735,6 +799,8 @@ export interface components {
             featured: boolean;
             /** Format: uuid */
             categoryId?: string | null;
+            seoTitle: string;
+            seoDescription: string;
             /** Format: int64 */
             version?: number | null;
         };
@@ -755,6 +821,8 @@ export interface components {
             featured: boolean;
             category?: components["schemas"]["CategoryRef"] | null;
             imageUrl?: string | null;
+            seoTitle?: string | null;
+            seoDescription?: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -829,6 +897,8 @@ export interface components {
             description: string;
             /** Format: int32 */
             position: number;
+            seoTitle: string;
+            seoDescription: string;
         };
         CategoryResponse: {
             /** Format: uuid */
@@ -840,6 +910,10 @@ export interface components {
             position: number;
             /** Format: int64 */
             productCount: number;
+            seoTitle?: string | null;
+            seoDescription?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
             /** Format: int64 */
             version: number;
         };
@@ -849,11 +923,12 @@ export interface components {
         AdminSettingResponse: {
             key: string;
             /** @enum {string} */
-            type: "BOOLEAN" | "STRING" | "INTEGER";
+            type: "BOOLEAN" | "STRING" | "INTEGER" | "TEXT" | "URL" | "COLOR" | "CHOICE";
             value: string;
             default: string;
             clientVisible: boolean;
             description: string;
+            options: string[];
         };
         CartItemRequest: {
             /** Format: uuid */
@@ -1015,17 +1090,6 @@ export interface components {
             role?: "USER" | "ADMIN" | null;
             enabled?: boolean | null;
         };
-        PageResponseProductSummary: {
-            items: components["schemas"]["ProductSummary"][];
-            /** Format: int32 */
-            page: number;
-            /** Format: int32 */
-            size: number;
-            /** Format: int64 */
-            totalItems: number;
-            /** Format: int32 */
-            totalPages: number;
-        };
         ProductSummary: {
             /** Format: uuid */
             id: string;
@@ -1039,6 +1103,56 @@ export interface components {
             /** Format: int32 */
             stock: number;
             category?: components["schemas"]["CategoryRef"] | null;
+        };
+        SearchSuggestions: {
+            products: components["schemas"]["ProductSummary"][];
+            categories: components["schemas"]["CategoryRef"][];
+            /** Format: int64 */
+            totalProducts: number;
+            didYouMean?: string | null;
+        };
+        SitemapCategory: {
+            slug: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SitemapEntries: {
+            products: components["schemas"]["SitemapProduct"][];
+            categories: components["schemas"]["SitemapCategory"][];
+        };
+        SitemapProduct: {
+            slug: string;
+            /** Format: date-time */
+            updatedAt: string;
+            imageUrl?: string | null;
+        };
+        CategoryFacet: {
+            slug: string;
+            name: string;
+            /** Format: int64 */
+            count: number;
+        };
+        PriceRange: {
+            /** Format: int64 */
+            minCents: number;
+            /** Format: int64 */
+            maxCents: number;
+        };
+        ProductSearchResponse: {
+            items: components["schemas"]["ProductSummary"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalItems: number;
+            /** Format: int32 */
+            totalPages: number;
+            /** @enum {string} */
+            sort: "RELEVANCE" | "NEWEST" | "PRICE_ASC" | "PRICE_DESC" | "NAME";
+            categories: components["schemas"]["CategoryFacet"][];
+            priceRange?: components["schemas"]["PriceRange"] | null;
+            didYouMean?: string | null;
         };
         ProductDetail: {
             /** Format: uuid */
@@ -1055,6 +1169,11 @@ export interface components {
             /** Format: int32 */
             stock: number;
             category?: components["schemas"]["CategoryRef"] | null;
+            seoTitle?: string | null;
+            seoDescription?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            related: components["schemas"]["ProductSummary"][];
         };
         ShopHome: {
             featured: components["schemas"]["ProductSummary"][];
@@ -1192,6 +1311,19 @@ export interface components {
             activeProducts: number;
             /** Format: int64 */
             lowStockProducts: number;
+        };
+        SearchInsight: {
+            query: string;
+            /** Format: int64 */
+            searches: number;
+            /** Format: int32 */
+            lastResultCount: number;
+            /** Format: date-time */
+            lastSearchedAt: string;
+        };
+        SearchInsights: {
+            top: components["schemas"]["SearchInsight"][];
+            withoutResults: components["schemas"]["SearchInsight"][];
         };
         PageResponseAdminProductResponse: {
             items: components["schemas"]["AdminProductResponse"][];
@@ -2238,12 +2370,57 @@ export interface operations {
             };
         };
     };
+    suggest: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SearchSuggestions"];
+                };
+            };
+        };
+    };
+    sitemap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SitemapEntries"];
+                };
+            };
+        };
+    };
     products_1: {
         parameters: {
             query?: {
                 q?: string;
                 category?: string;
-                sort?: "NEWEST" | "PRICE_ASC" | "PRICE_DESC" | "NAME";
+                minPrice?: number;
+                maxPrice?: number;
+                inStock?: boolean;
+                sort?: "RELEVANCE" | "NEWEST" | "PRICE_ASC" | "PRICE_DESC" | "NAME";
                 page?: number;
                 size?: number;
             };
@@ -2259,7 +2436,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PageResponseProductSummary"];
+                    "*/*": components["schemas"]["ProductSearchResponse"];
                 };
             };
         };
@@ -2322,6 +2499,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CategoryResponse"][];
+                };
+            };
+        };
+    };
+    category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CategoryResponse"];
                 };
             };
         };
@@ -2469,6 +2668,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ShopStats"];
+                };
+            };
+        };
+    };
+    searchInsights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SearchInsights"];
                 };
             };
         };

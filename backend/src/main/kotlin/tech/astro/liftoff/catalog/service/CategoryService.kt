@@ -31,7 +31,10 @@ class CategoryService(
     @Transactional
     fun create(actor: User, request: SaveCategoryRequest): CategoryResponse {
         val slug = resolveSlug(request, current = null)
-        val category = categories.saveAndFlush(Category(slug, request.name.trim(), request.description.trim(), request.position))
+        val category = Category(slug, request.name.trim(), request.description.trim(), request.position)
+        category.seoTitle = request.seoTitle.trim().ifEmpty { null }
+        category.seoDescription = request.seoDescription.trim().ifEmpty { null }
+        categories.saveAndFlush(category)
         audit.record(AuditActions.ADMIN_CATEGORY_CREATED, actor = actor, targetType = "category", targetId = category.id.toString(), targetLabel = category.name)
         return mapper.category(category, 0)
     }
@@ -43,6 +46,8 @@ class CategoryService(
         category.name = request.name.trim()
         category.description = request.description.trim()
         category.position = request.position
+        category.seoTitle = request.seoTitle.trim().ifEmpty { null }
+        category.seoDescription = request.seoDescription.trim().ifEmpty { null }
         categories.saveAndFlush(category)
         audit.record(AuditActions.ADMIN_CATEGORY_UPDATED, actor = actor, targetType = "category", targetId = category.id.toString(), targetLabel = category.name)
         val count = products.countByCategory(activeOnly = false).firstOrNull { it.categoryId == id }?.count ?: 0
@@ -55,6 +60,14 @@ class CategoryService(
         val category = load(id)
         categories.delete(category)
         audit.record(AuditActions.ADMIN_CATEGORY_DELETED, actor = actor, targetType = "category", targetId = category.id.toString(), targetLabel = category.name)
+    }
+
+    /** A category page of the store. */
+    @Transactional(readOnly = true)
+    fun get(slug: String): CategoryResponse {
+        val category = categories.findBySlug(slug) ?: throw NotFoundException("category.not_found", "Category not found")
+        val count = products.countByCategory(activeOnly = true).firstOrNull { it.categoryId == category.id }?.count ?: 0
+        return mapper.category(category, count)
     }
 
     fun load(id: UUID): Category = categories.findById(id).orElseThrow { NotFoundException("category.not_found", "Category not found") }

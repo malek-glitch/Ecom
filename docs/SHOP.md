@@ -9,7 +9,8 @@ page explains how it fits together and where to change it.
 | Page | Path | Notes |
 |---|---|---|
 | Store home | `/` | Featured products, newest products, categories. Server-rendered. |
-| Catalog | `/products?q=&category=&sort=&page=` | Search, category filter, sort, pagination. Server-rendered. |
+| Catalog and search | `/products?q=&sort=&min=&max=&stock=1&page=` | Search results or every product, with filters, sort and pagination. Server-rendered. |
+| Category | `/categories/<slug>` | The same list for one category, with its own title and description. Server-rendered. |
 | Product | `/products/<slug>` | Photo, price (with a struck-through "was" price on sale), stock, add to cart. Server-rendered. |
 | Cart | `/cart` | Kept in `localStorage`, so it works without an account. Prices are re-checked with the API on every change. |
 | Checkout | `/checkout` | Needs an account: unsigned visitors go through `/login` and come back. Address, payment method, note. |
@@ -29,6 +30,55 @@ The admin overview adds revenue and order counts for the last 30 days, orders wa
 handled and low-stock products. Store settings (currency, shipping fee, free-shipping threshold,
 bank details) are in **App settings** ([CONFIGURATION.md](CONFIGURATION.md#runtime-settings)).
 Product, category and order-status changes are written to the audit log.
+
+## Search
+
+The search box in the header suggests products and categories while the shopper types, offers a
+correction for misspellings and remembers the last searches on the device. The results page adds
+filters (category with counts, price range, in stock) and sorting by relevance.
+
+It runs in PostgreSQL, with no extra service (`ProductSearchService`, migration `V5`):
+
+- **Full text** on the name, SKU and description, each word matched as a prefix: "note" finds
+  "notebook" while it's being typed. The `simple` text configuration doesn't stem words, which
+  keeps it neutral across French, English and Arabic.
+- **Typo tolerance** with trigram similarity (`pg_trgm`) on the name and SKU: "skilet" finds
+  "Cast Iron Skillet". The threshold is `SearchTerms.TYPO_THRESHOLD`.
+- **Accents ignored** both ways (`unaccent`): "creme" finds "Crème".
+- **Category names count**: "kitchen" lists the kitchen products.
+- **Ranking**: full-text rank, then closeness of the name, names starting with the query first,
+  products in stock slightly ahead.
+- **Did you mean**: when nothing matches, each word is replaced by the closest word of the
+  catalog's vocabulary, and the correction is offered only if it finds something.
+- **Insights**: each search (first page only) is counted by normalized query, with no personal
+  data. The admin overview lists the top searches and the searches that found nothing; rows unseen
+  for 180 days are deleted by the nightly job.
+
+Words are reduced to letters and digits before reaching SQL, always as bound parameters. For very
+large catalogs, synonyms or per-language stemming, put a dedicated engine (Meilisearch,
+OpenSearch...) behind `ProductSearchService`: the API and the pages don't change.
+
+## Search engines (SEO)
+
+- Store pages are server-rendered, with a title, description, canonical URL, Open Graph and
+  Twitter tags on each (`lib/components/app/Seo.svelte`).
+- Products and categories have optional **SEO title and description** fields; the admin form shows
+  a preview of the search result.
+- Structured data (JSON-LD): `Product` with its offer, price and availability, `BreadcrumbList`
+  on product and category pages, `ItemList` on the catalog, `Organization` and `WebSite` with a
+  search box on the home page.
+- `/sitemap.xml` lists the home page, the catalog, categories and products (with photos), built
+  from the live catalog; `/robots.txt` points to it and keeps crawlers out of private pages.
+- Search results, filtered lists, the cart, checkout and every signed-in page are `noindex`.
+- Categories have clean URLs (`/categories/<slug>`); old `/products?category=` links redirect.
+
+## Appearance
+
+**Store → Appearance** sets the brand colour, corner roundness, heading font, product photo shape,
+logo, announcement bar, home page texts and picture, footer text and social links, with a live
+preview. They are runtime settings (see [CONFIGURATION.md](CONFIGURATION.md#runtime-settings)):
+`lib/theme/theme.ts` turns them into CSS variables in the page head at render time, so there is no
+rebuild and no flash of the default colours.
 
 ## How it works
 

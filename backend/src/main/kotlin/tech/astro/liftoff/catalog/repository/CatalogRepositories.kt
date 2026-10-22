@@ -46,6 +46,11 @@ interface ProductRepository : JpaRepository<Product, UUID>, JpaSpecificationExec
 
     fun findAllByIdIn(ids: Collection<UUID>): List<Product>
 
+    @EntityGraph(attributePaths = ["category"])
+    fun findWithCategoryByIdIn(ids: Collection<UUID>): List<Product>
+
+    fun findAllByActiveTrueOrderByUpdatedAtDesc(): List<Product>
+
     @Query("select p.category.id as categoryId, count(p) as count from Product p where p.category is not null and (:activeOnly = false or p.active = true) group by p.category.id")
     fun countByCategory(activeOnly: Boolean): List<CategoryCount>
 
