@@ -8,6 +8,7 @@ import Package from '@lucide/svelte/icons/package';
 import Receipt from '@lucide/svelte/icons/receipt';
 import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 import Store from '@lucide/svelte/icons/store';
+import Warehouse from '@lucide/svelte/icons/warehouse';
 import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 import Users from '@lucide/svelte/icons/users';
 import { m } from '$lib/paraglide/messages';
@@ -45,6 +46,7 @@ export const NAVIGATION: NavGroup[] = [
 		items: [
 			{ href: '/admin/orders', label: m.nav_admin_orders, icon: ShoppingCart },
 			{ href: '/admin/products', label: m.nav_admin_products, icon: Package },
+			{ href: '/admin/inventory', label: m.nav_admin_inventory, icon: Warehouse },
 			{ href: '/admin/categories', label: m.nav_admin_categories, icon: FolderTree },
 			{ href: '/admin/appearance', label: m.nav_admin_appearance, icon: Palette },
 		],

@@ -36,8 +36,8 @@ data class CartLine(
     val unitPriceCents: Long,
     val quantity: Int,
     val lineTotalCents: Long,
-    /** What's left. Lower than `quantity` means the line can't be ordered as is. */
-    val stock: Int,
+    /** What's left (null: not tracked, always available). Lower than `quantity` means the line can't be ordered as is. */
+    val stock: Int?,
 )
 
 data class CartQuote(

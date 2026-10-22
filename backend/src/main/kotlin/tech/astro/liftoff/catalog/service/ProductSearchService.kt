@@ -11,6 +11,7 @@ import tech.astro.liftoff.catalog.dto.ProductSearchResponse
 import tech.astro.liftoff.catalog.dto.ProductSort
 import tech.astro.liftoff.catalog.dto.SearchSuggestions
 import tech.astro.liftoff.catalog.repository.ProductRepository
+import tech.astro.liftoff.inventory.service.InventoryPolicy
 import tech.astro.liftoff.shared.web.Paging
 import java.util.UUID
 
@@ -34,6 +35,7 @@ class ProductSearchService(
     private val products: ProductRepository,
     private val mapper: CatalogMapper,
     private val insights: SearchInsightsService,
+    private val inventory: InventoryPolicy,
 ) {
 
     @Transactional(readOnly = true)
@@ -168,7 +170,11 @@ class ProductSearchService(
             conditions += "p.price_cents <= :maxPrice"
             params["maxPrice"] = it
         }
-        if (criteria.inStockOnly) conditions += "p.stock > 0"
+        if (criteria.inStockOnly) {
+            // Untracked products, or every product with the inventory off, are always available.
+            conditions += "(p.stock > 0 or not p.track_inventory or not :inventoryOn)"
+            params["inventoryOn"] = inventory.enabled()
+        }
         return Where(conditions.joinToString(" and "), params)
     }
 
@@ -177,7 +183,7 @@ class ProductSearchService(
             (ts_rank_cd(p.search_vector, to_tsquery('simple', immutable_unaccent(:tsquery))) * 2
              + word_similarity(immutable_unaccent(:text), p.search_text)
              + case when starts_with(p.search_text, immutable_unaccent(:text)) then 1 else 0 end
-             + case when p.stock > 0 then 0.2 else 0 end) desc, p.created_at desc, p.id
+             + case when p.stock > 0 or not p.track_inventory then 0.2 else 0 end) desc, p.created_at desc, p.id
         """.trimIndent()
         ProductSort.NEWEST -> "p.created_at desc, p.id"
         ProductSort.PRICE_ASC -> "p.price_cents asc, p.name asc, p.id"

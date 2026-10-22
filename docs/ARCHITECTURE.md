@@ -37,7 +37,8 @@ features use `controller/ dto/ model/ repository/ service/` subpackages. Small o
 | `mail` | Renders localized emails (Thymeleaf, HTML and text) and sends them after commit, with retries. |
 | `storage` | S3 storage, avatar processing and the file proxy. Only active with `STORAGE_ENABLED=true`. |
 | `catalog` | The store's categories and products: the public catalog (`/api/v1/public/shop`), the search engine and its insights, the sitemap data, admin CRUD, product photos, the demo seeder. See [SHOP.md](SHOP.md). |
-| `order` | Cart pricing, checkout with atomic stock updates, order history, admin order handling and order emails. See [SHOP.md](SHOP.md). |
+| `order` | Cart pricing, checkout, order history, admin order handling and order emails. See [SHOP.md](SHOP.md). |
+| `inventory` | Optional stock management: atomic stock changes, the movement history, adjustments, low-stock alerts, valuation and CSV export. See [SHOP.md](SHOP.md#stock-management-optional). |
 | `note` | The example module: copy it, then delete it. |
 | `shared` | Cross-cutting pieces: typed configuration (`AppProperties`), security, errors, paging, request IDs, locales. |
 
@@ -173,8 +174,8 @@ src/routes/
 │   └── checkout/        address and payment, needs an account         browser only
 ├── (auth)/              login, register, forgot/reset password, verify SSR, guest-only where it matters
 ├── (app)/               dashboard, my orders, notes, settings         browser only, signed in
-│   └── admin/           overview, orders, products, categories,       browser only, ADMIN
-│                        appearance, users, settings, audit
+│   └── admin/           overview, orders, products, inventory,        browser only, ADMIN
+│                        categories, appearance, users, settings, audit
 ├── sitemap.xml/         generated from the catalog
 ├── robots.txt/          points to the sitemap
 └── healthz/             container health check

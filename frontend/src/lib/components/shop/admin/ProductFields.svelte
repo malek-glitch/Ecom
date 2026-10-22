@@ -7,7 +7,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import type { Form } from '$lib/forms/form.svelte';
 	import { m } from '$lib/paraglide/messages';
-	import type { ProductValues } from './product-schema';
+	import type { AdminProduct, ProductValues } from './product-schema';
 	import SearchPreview from './SearchPreview.svelte';
 
 	/** Shared by the "new product" page and the edit page. */
@@ -15,9 +15,12 @@
 		form,
 		categories,
 		currency,
+		product,
 		idPrefix = 'product',
 	}: {
 		form: Form<ProductValues>;
+		/** The product being edited; absent when creating one. */
+		product?: AdminProduct;
 		categories: components['schemas']['CategoryResponse'][];
 		currency: string;
 		idPrefix?: string;
@@ -78,18 +81,31 @@
 			<Field.Description>{m.product_field_compare_at_hint()}</Field.Description>
 			<Field.Error errors={form.fieldErrors('compareAtPrice')} />
 		</Field.Field>
-		<Field.Field data-invalid={!!form.errors.stock}>
-			<Field.Label for="{idPrefix}-stock">{m.product_field_stock()}</Field.Label>
-			<Input
-				id="{idPrefix}-stock"
-				inputmode="numeric"
-				dir="ltr"
-				bind:value={form.values.stock}
-				aria-invalid={!!form.errors.stock}
-				required
-			/>
-			<Field.Error errors={form.fieldErrors('stock')} />
-		</Field.Field>
+		{#if product}
+			<!-- Existing products: stock changes go through the inventory, which keeps a history. -->
+			<Field.Field>
+				<Field.Label>{m.product_field_stock()}</Field.Label>
+				<div class="flex h-9 items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 text-sm">
+					<span class="tabular-nums">{product.trackInventory ? product.stock : m.stock_status_untracked()}</span>
+					<a href="/admin/inventory/{product.id}" class="font-medium text-primary hover:underline"
+						>{m.inventory_manage()}</a
+					>
+				</div>
+			</Field.Field>
+		{:else}
+			<Field.Field data-invalid={!!form.errors.stock}>
+				<Field.Label for="{idPrefix}-stock">{m.product_field_initial_stock()}</Field.Label>
+				<Input
+					id="{idPrefix}-stock"
+					inputmode="numeric"
+					dir="ltr"
+					bind:value={form.values.stock}
+					aria-invalid={!!form.errors.stock}
+					required
+				/>
+				<Field.Error errors={form.fieldErrors('stock')} />
+			</Field.Field>
+		{/if}
 	</div>
 
 	<div class="grid gap-4 sm:grid-cols-3">

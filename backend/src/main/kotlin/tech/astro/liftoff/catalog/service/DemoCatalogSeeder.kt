@@ -9,6 +9,7 @@ import tech.astro.liftoff.catalog.model.Category
 import tech.astro.liftoff.catalog.model.Product
 import tech.astro.liftoff.catalog.repository.CategoryRepository
 import tech.astro.liftoff.catalog.repository.ProductRepository
+import tech.astro.liftoff.inventory.service.InventoryService
 import tech.astro.liftoff.shared.config.AppProperties
 
 /**
@@ -20,6 +21,7 @@ import tech.astro.liftoff.shared.config.AppProperties
 class DemoCatalogSeeder(
     private val categories: CategoryRepository,
     private val products: ProductRepository,
+    private val inventory: InventoryService,
     private val props: AppProperties,
 ) : ApplicationRunner {
 
@@ -32,7 +34,7 @@ class DemoCatalogSeeder(
             categories.save(Category(slug, name, description, position = index))
         }.associateBy { it.slug }
         DEMO_PRODUCTS.forEach { demo ->
-            products.save(
+            val product = products.save(
                 Product(
                     slug = Slugs.from(demo.name),
                     name = demo.name,
@@ -45,6 +47,8 @@ class DemoCatalogSeeder(
                     category = bySlug.getValue(demo.category),
                 ),
             )
+            products.flush()
+            inventory.recordInitial(product, actor = null)
         }
         log.info("Seeded the demo catalog: {} categories, {} products (SHOP_SEED_DEMO=true)", bySlug.size, DEMO_PRODUCTS.size)
     }

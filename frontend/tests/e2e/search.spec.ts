@@ -8,7 +8,7 @@ test('the search box suggests products while typing, despite typos', async ({ br
 	await open(admin, '/admin/products/new');
 	await admin.getByLabel('Name', { exact: true }).fill(`${word} Kettle`);
 	await admin.getByLabel('Price (EUR)', { exact: true }).fill('35');
-	await admin.getByLabel('Stock', { exact: true }).fill('4');
+	await admin.getByLabel('Initial stock', { exact: true }).fill('4');
 	await admin.getByRole('button', { name: 'Create' }).click();
 	await expect(admin.getByText('Product created. Add a photo below.')).toBeVisible();
 

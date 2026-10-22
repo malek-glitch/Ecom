@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.PositiveOrZero
 import jakarta.validation.constraints.Size
+import tech.astro.liftoff.inventory.dto.StockStatus
 import java.time.Instant
 import java.util.UUID
 
@@ -41,7 +42,10 @@ data class ProductSummary(
     val priceCents: Long,
     val compareAtPriceCents: Long?,
     val imageUrl: String?,
-    val stock: Int,
+    /** Units left; null when stock isn't tracked (always available). */
+    val stock: Int?,
+    /** At or below the product's low-stock level ("only 3 left"). */
+    val lowStock: Boolean,
     val category: CategoryRef?,
 )
 
@@ -54,7 +58,9 @@ data class ProductDetail(
     val compareAtPriceCents: Long?,
     val sku: String?,
     val imageUrl: String?,
-    val stock: Int,
+    /** Units left; null when stock isn't tracked (always available). */
+    val stock: Int?,
+    val lowStock: Boolean,
     val category: CategoryRef?,
     val seoTitle: String?,
     val seoDescription: String?,
@@ -71,7 +77,10 @@ data class AdminProductResponse(
     val priceCents: Long,
     val compareAtPriceCents: Long?,
     val sku: String?,
+    /** The stored stock, even when it isn't tracked. Change it through the inventory endpoints. */
     val stock: Int,
+    val trackInventory: Boolean,
+    val stockStatus: StockStatus,
     val active: Boolean,
     val featured: Boolean,
     val category: CategoryRef?,
@@ -114,6 +123,7 @@ data class SaveProductRequest(
     val compareAtPriceCents: Long? = null,
     @field:Size(max = 64)
     val sku: String = "",
+    /** Initial stock, on create only. Later changes go through the inventory (adjustments keep a history). */
     @field:PositiveOrZero @field:Max(1_000_000)
     val stock: Int = 0,
     val active: Boolean = true,

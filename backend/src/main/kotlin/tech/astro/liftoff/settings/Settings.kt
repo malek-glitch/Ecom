@@ -87,6 +87,30 @@ enum class Setting(
         description = "Bank details shown to customers who pay by transfer. Leave empty to hide that payment option.",
     ),
 
+    // ------------------------------------------------------------------ inventory
+    INVENTORY_ENABLED(
+        key = "inventory.enabled",
+        type = SettingType.BOOLEAN,
+        default = "true",
+        clientVisible = true,
+        description = "Track stock: orders take items out of stock and sold-out products can't be ordered. Off: everything can always be ordered.",
+    ),
+    INVENTORY_LOW_STOCK_THRESHOLD(
+        key = "inventory.lowStockThreshold",
+        type = SettingType.INTEGER,
+        default = "5",
+        clientVisible = false,
+        description = "Products at or below this many units count as low stock (\"only 3 left\", admin alerts). Each product can override it.",
+        min = 0,
+    ),
+    INVENTORY_LOW_STOCK_EMAILS(
+        key = "inventory.lowStockEmails",
+        type = SettingType.BOOLEAN,
+        default = "true",
+        clientVisible = false,
+        description = "Email the administrators when a product runs low or sells out.",
+    ),
+
     // ------------------------------------------------------------------ appearance
     THEME_BRAND_COLOR(
         key = "theme.brandColor",

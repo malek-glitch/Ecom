@@ -19,7 +19,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { absoluteUrl, breadcrumbs, decimalPrice } from '$lib/seo/json-ld';
 	import { cart, MAX_LINE_QUANTITY } from '$lib/shop/cart.svelte';
-	import { shopSettings } from '$lib/shop/store-api';
+	import { orderableUnits, shopSettings } from '$lib/shop/store-api';
 	import { IMAGE_RATIO_CLASS, storeSettings } from '$lib/theme/store-settings';
 	import { cn } from '$lib/utils';
 
@@ -30,7 +30,9 @@
 	const ratio = $derived(IMAGE_RATIO_CLASS[storeSettings(data.config.settings).productImageRatio]);
 	const inCart = $derived(cart.quantityOf(product.id));
 	/** What can still be added, given the stock and what is already in the cart. */
-	const available = $derived(Math.max(0, Math.min(product.stock, MAX_LINE_QUANTITY) - inCart));
+	const available = $derived(Math.max(0, orderableUnits(product.stock, MAX_LINE_QUANTITY) - inCart));
+	/** Null stock: not tracked, always available. */
+	const inStock = $derived(product.stock == null || product.stock > 0);
 
 	let quantity = $state(1);
 
@@ -52,7 +54,7 @@
 				'@type': 'Offer',
 				price: decimalPrice(product.priceCents, currencyDigits(shop.currency)),
 				priceCurrency: shop.currency,
-				availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+				availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
 				itemCondition: 'https://schema.org/NewCondition',
 				url: `${origin}/products/${product.slug}`,
 				seller: { '@type': 'Organization', name: data.config.appName },
@@ -132,10 +134,10 @@
 					currency={shop.currency}
 					class="text-2xl"
 				/>
-				<div><StockBadge stock={product.stock} showInStock /></div>
+				<div><StockBadge stock={product.stock} lowStock={product.lowStock} showInStock /></div>
 			</div>
 
-			{#if product.stock > 0}
+			{#if inStock}
 				<div class="flex flex-wrap items-center gap-3">
 					<QuantityInput
 						bind:value={quantity}
@@ -194,7 +196,7 @@
 </div>
 
 <!-- Phones: the price and the button stay in reach while reading. -->
-{#if product.stock > 0}
+{#if inStock}
 	<div
 		class="fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur md:hidden"
 	>

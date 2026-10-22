@@ -42,7 +42,7 @@
 			label: m.admin_stat_low_stock(),
 			value: formatNumber(data.shop.lowStockProducts),
 			icon: PackageMinus,
-			href: '/admin/products?status=LOW_STOCK',
+			href: '/admin/inventory?status=LOW',
 		},
 		{ label: m.admin_stat_users(), value: data.stats.totalUsers, icon: Users, href: '/admin/users' },
 		{ label: m.admin_stat_new_users(), value: data.stats.newUsersLast7Days, icon: UserPlus, href: '/admin/users' },

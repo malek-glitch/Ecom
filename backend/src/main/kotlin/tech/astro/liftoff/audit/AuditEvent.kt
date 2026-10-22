@@ -74,5 +74,7 @@ object AuditActions {
     const val ADMIN_CATEGORY_UPDATED = "admin.category_updated"
     const val ADMIN_CATEGORY_DELETED = "admin.category_deleted"
     const val ADMIN_ORDER_STATUS_CHANGED = "admin.order_status_changed"
+    const val ADMIN_STOCK_ADJUSTED = "admin.stock_adjusted"
+    const val ADMIN_INVENTORY_SETTINGS_CHANGED = "admin.inventory_settings_changed"
     const val ADMIN_BOOTSTRAPPED = "system.admin_bootstrapped"
 }

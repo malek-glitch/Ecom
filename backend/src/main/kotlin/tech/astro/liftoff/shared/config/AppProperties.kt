@@ -89,7 +89,5 @@ data class AppProperties(
     data class Shop(
         /** Fills an empty catalog with demo categories and products at startup (development and demos). */
         val seedDemo: Boolean = false,
-        /** Products at or below this stock count show up as "low stock" for admins and customers. */
-        val lowStockThreshold: Int = 5,
     )
 }

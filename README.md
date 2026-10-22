@@ -16,6 +16,7 @@ right-to-left) and a production setup work on day one, so a new shop starts with
 - A cart that works without an account, priced by the server on every change.
 - Checkout with shipping address and payment by cash on delivery or bank transfer (card payments are a documented extension).
 - Stock taken atomically at checkout, so the last item can't be sold twice; cancelling restocks.
+- Optional stock management: deliveries, removals and stock-takes, a history of every movement, stock value, per-product low-stock levels, email alerts and CSV export. Switch it off to sell without limits.
 - Order history for customers, with cancellation while an order is pending.
 - Admin area for products (with photos), categories and orders (paid, shipped, delivered, cancelled), plus revenue and low-stock stats.
 - Order emails in the customer's language: confirmation, shipped, cancelled.
@@ -146,6 +147,7 @@ to turn uploads on.
 │       ├── storage/         S3 storage and avatars (optional)
 │       ├── catalog/         categories and products, the public catalog
 │       ├── order/           cart pricing, checkout, orders, order emails
+│       ├── inventory/       stock levels, movements, adjustments, alerts (optional)
 │       ├── note/            the example module
 │       └── shared/          config, security, errors, web helpers
 ├── frontend/                SvelteKit app

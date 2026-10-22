@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import tech.astro.liftoff.catalog.repository.ProductRepository
 import tech.astro.liftoff.catalog.service.CatalogMapper
+import tech.astro.liftoff.inventory.service.InventoryPolicy
 import tech.astro.liftoff.order.dto.CartItemRequest
 import tech.astro.liftoff.order.dto.CartLine
 import tech.astro.liftoff.order.dto.CartQuote
@@ -16,6 +17,7 @@ class CartService(
     private val products: ProductRepository,
     private val mapper: CatalogMapper,
     private val pricing: PricingService,
+    private val inventory: InventoryPolicy,
 ) {
     @Transactional(readOnly = true)
     fun quote(items: List<CartItemRequest>): CartQuote {
@@ -31,7 +33,7 @@ class CartService(
                 unitPriceCents = product.priceCents,
                 quantity = quantity,
                 lineTotalCents = product.priceCents * quantity,
-                stock = product.stock,
+                stock = inventory.publicStock(product),
             )
         }
         val unavailable = wanted.keys.filter { it !in found }
@@ -45,7 +47,7 @@ class CartService(
             shippingCents = shipping,
             totalCents = subtotal + shipping,
             freeShippingThresholdCents = pricing.freeShippingThreshold(),
-            orderable = lines.isNotEmpty() && unavailable.isEmpty() && lines.all { it.quantity <= it.stock },
+            orderable = lines.isNotEmpty() && unavailable.isEmpty() && lines.all { line -> line.stock == null || line.quantity <= line.stock },
         )
     }
 

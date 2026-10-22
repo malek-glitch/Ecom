@@ -88,7 +88,7 @@
 				{#if stale}
 					<Button type="button" variant="outline" size="sm" onclick={reload}>{m.common_reload()}</Button>
 				{/if}
-				<ProductFields {form} {categories} {currency} />
+				<ProductFields {form} {categories} {currency} {product} />
 				<div class="flex justify-end">
 					<SubmitButton busy={form.submitting} disabled={stale}>{m.common_save()}</SubmitButton>
 				</div>

@@ -31,6 +31,30 @@ handled and low-stock products. Store settings (currency, shipping fee, free-shi
 bank details) are in **App settings** ([CONFIGURATION.md](CONFIGURATION.md#runtime-settings)).
 Product, category and order-status changes are written to the audit log.
 
+## Stock management (optional)
+
+**Store → Inventory** shows every product's stock, what it is worth (at cost and at selling
+price), and the history of every change. It's a module you can switch off: with
+`inventory.enabled` off, the store sells without limits and shows no stock.
+
+- **Adjustments**: *Receive* (a delivery), *Remove* (damaged, lost...) or *Count* (a stock-take:
+  enter the real figure, the difference is recorded), each with an optional note.
+- **History**: every change is a stock movement (opening stock, received, sold, returned, removed,
+  counted) with the quantity, the level right after, the order or the person behind it, and the
+  note. The movements of a product always add up to its stock.
+- **Per product**: track stock or not (made-to-order or digital products are always available),
+  its own low-stock level, and its unit cost for the stock value.
+- **Alerts**: administrators get an email when a product reaches its low-stock level or sells out
+  (`inventory.lowStockEmails`).
+- **Export**: a CSV of the stock levels, for a stock-take or a spreadsheet. Cells that would start
+  a formula are escaped.
+
+Stock only changes through `InventoryService`, with atomic SQL updates: the `stock` column is
+read-only for JPA. The product form sets the initial stock of a new product; afterwards stock is
+changed on the inventory page, so a form saved late can never overwrite a sale.
+For shoppers, a product's `stock` is `null` when it isn't tracked, and `lowStock` says when to
+show "only N left".
+
 ## Search
 
 The search box in the header suggests products and categories while the shopper types, offers a
@@ -100,11 +124,12 @@ the conversions in the frontend.
    the client's numbers. The client sends the total it showed (`expectedTotalCents`); if prices
    changed meanwhile the order is refused with `409 order.price_changed` rather than charging a
    different amount.
-4. Stock is taken with one conditional `UPDATE ... SET stock = stock - n WHERE stock >= n` per
-   product, inside the order's transaction. If any line is short, the whole order rolls back with
-   `409 order.out_of_stock`. Two customers can't buy the last item.
-5. Cancelling an order (by the customer while `PENDING`, or by an admin) puts the items back in
-   stock.
+4. With stock tracking on, stock is taken with one conditional `UPDATE ... SET stock = stock - n
+   WHERE stock >= n` per tracked product, inside the order's transaction, and recorded as a `SOLD`
+   movement. If any line is short, the whole order rolls back with `409 order.out_of_stock`. Two
+   customers can't buy the last item.
+5. Cancelling an order (by the customer while `PENDING`, or by an admin) puts back what the order
+   took, going by its movements, so it is right even if tracking was switched since.
 
 ### Order statuses
 
@@ -134,6 +159,7 @@ instead of deleting it.
 | `POST /api/v1/public/shop/cart/quote` | anyone (rate limit `cart`) |
 | `POST /api/v1/orders`, `GET /api/v1/orders`, `GET /api/v1/orders/{id}`, `POST /api/v1/orders/{id}/cancel` | signed-in customer, own orders only (others are 404) |
 | `/api/v1/admin/shop/products`, `/categories`, `/orders`, `/orders/{id}/status`, `/stats` | ADMIN |
+| `/api/v1/admin/inventory/summary`, `/products`, `/products/{id}/adjustments`, `/products/{id}/settings`, `/movements`, `/export` | ADMIN |
 
 The full contract is in Swagger UI (`/swagger-ui.html`), tags *Store*, *Orders*, *Admin: catalog*
 and *Admin: orders*.

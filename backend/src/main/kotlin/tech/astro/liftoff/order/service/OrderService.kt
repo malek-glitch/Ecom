@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional
 import tech.astro.liftoff.audit.AuditActions
 import tech.astro.liftoff.audit.AuditService
 import tech.astro.liftoff.catalog.repository.ProductRepository
+import tech.astro.liftoff.inventory.service.InventoryService
 import tech.astro.liftoff.order.dto.AddressResponse
 import tech.astro.liftoff.order.dto.OrderItemResponse
 import tech.astro.liftoff.order.dto.OrderResponse
@@ -20,7 +21,6 @@ import tech.astro.liftoff.order.model.PaymentMethod
 import tech.astro.liftoff.order.model.ShippingAddress
 import tech.astro.liftoff.order.model.ShopOrder
 import tech.astro.liftoff.order.repository.OrderRepository
-import tech.astro.liftoff.shared.config.AppProperties
 import tech.astro.liftoff.shared.error.BadRequestException
 import tech.astro.liftoff.shared.error.ConflictException
 import tech.astro.liftoff.shared.error.NotFoundException
@@ -42,9 +42,9 @@ class OrderService(
     private val products: ProductRepository,
     private val users: UserRepository,
     private val pricing: PricingService,
+    private val inventory: InventoryService,
     private val mailer: OrderMailer,
     private val audit: AuditService,
-    private val props: AppProperties,
     private val clock: Clock,
 ) {
     // ------------------------------------------------------------------ customer
@@ -79,13 +79,6 @@ class OrderService(
             throw ConflictException("order.price_changed", "Prices changed since the cart was shown. Review it and try again.")
         }
 
-        // Sorted by id so concurrent checkouts lock rows in the same order (no deadlocks).
-        for ((id, quantity) in wanted.toSortedMap()) {
-            if (products.takeStock(id, quantity) == 0) {
-                throw ConflictException("order.out_of_stock", "Not enough stock for ${found.getValue(id).name}")
-            }
-        }
-
         val address = request.shippingAddress!!
         val order = ShopOrder(
             number = orders.nextNumber(),
@@ -110,6 +103,8 @@ class OrderService(
         order.items.addAll(items)
         order.itemCount = items.sumOf { it.quantity }
         orders.saveAndFlush(order)
+        // After the order exists, so the stock history can point at it. Short stock rolls it all back.
+        inventory.takeForOrder(order, wanted, found)
         mailer.placed(order, customer.fullName, customer.locale)
         return toResponse(order)
     }
@@ -205,15 +200,15 @@ class OrderService(
             pendingOrders = orders.countByStatus(OrderStatus.PENDING),
             paidOrders = orders.countByStatus(OrderStatus.PAID),
             activeProducts = products.countByActiveTrue(),
-            lowStockProducts = products.countByActiveTrueAndStockLessThanEqual(props.shop.lowStockThreshold),
+            lowStockProducts = inventory.summary().let { if (it.enabled) it.lowStock + it.outOfStock else 0 },
         )
     }
 
     // ------------------------------------------------------------------ helpers
 
-    /** Puts the items back on the shelf. Lines whose product was deleted are skipped. */
+    /** Puts back on the shelf what the order took. Lines whose product was deleted are skipped. */
     private fun cancel(order: ShopOrder) {
-        order.items.forEach { item -> item.productId?.let { products.returnStock(it, item.quantity) } }
+        inventory.returnForOrder(order)
         order.status = OrderStatus.CANCELLED
     }
 

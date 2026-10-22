@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.Specification
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
-import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import tech.astro.liftoff.catalog.model.Category
 import tech.astro.liftoff.catalog.model.Product
@@ -55,18 +54,4 @@ interface ProductRepository : JpaRepository<Product, UUID>, JpaSpecificationExec
     fun countByCategory(activeOnly: Boolean): List<CategoryCount>
 
     fun countByActiveTrue(): Long
-
-    fun countByActiveTrueAndStockLessThanEqual(threshold: Int): Long
-
-    /**
-     * Takes [quantity] items out of stock only if that many are left. Atomic in the database,
-     * so concurrent checkouts can't oversell: 0 updated rows means "not enough stock".
-     */
-    @Modifying
-    @Query("update Product p set p.stock = p.stock - :quantity where p.id = :id and p.active = true and p.stock >= :quantity")
-    fun takeStock(id: UUID, quantity: Int): Int
-
-    @Modifying
-    @Query("update Product p set p.stock = p.stock + :quantity where p.id = :id")
-    fun returnStock(id: UUID, quantity: Int): Int
 }

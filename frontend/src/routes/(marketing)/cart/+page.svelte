@@ -22,7 +22,10 @@
 
 	const quote = createCartQuote();
 	const currency = $derived(quote.quote?.currency ?? shopSettings(data.config.settings).currency);
-	const shortLines = $derived(quote.quote?.lines.filter((line) => line.quantity > line.stock) ?? []);
+	// A null stock means not tracked: never short.
+	const shortLines = $derived(
+		quote.quote?.lines.filter((line) => line.stock != null && line.quantity > line.stock) ?? [],
+	);
 	const missingForFreeShipping = $derived.by(() => {
 		const q = quote.quote;
 		if (!q?.freeShippingThresholdCents || q.shippingCents === 0) return 0;
@@ -71,7 +74,7 @@
 								<p class="text-sm text-muted-foreground tabular-nums">
 									{m.cart_each({ price: formatMoney(line?.unitPriceCents ?? item.priceCents, currency) })}
 								</p>
-								{#if line && line.quantity > line.stock}
+								{#if line && line.stock != null && line.quantity > line.stock}
 									<p class="text-sm text-destructive">
 										{line.stock === 0 ? m.shop_out_of_stock() : m.shop_low_stock({ count: line.stock })}
 									</p>

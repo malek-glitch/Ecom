@@ -5,8 +5,8 @@
 	import { page } from '$app/state';
 	import { Badge } from '$lib/components/ui/badge';
 	import { m } from '$lib/paraglide/messages';
-	import { cart } from '$lib/shop/cart.svelte';
-	import type { ProductSummary } from '$lib/shop/store-api';
+	import { cart, MAX_LINE_QUANTITY } from '$lib/shop/cart.svelte';
+	import { orderableUnits, type ProductSummary } from '$lib/shop/store-api';
 	import { IMAGE_RATIO_CLASS, storeSettings } from '$lib/theme/store-settings';
 	import { cn } from '$lib/utils';
 	import Highlight from './Highlight.svelte';
@@ -19,7 +19,8 @@
 
 	const onSale = $derived(product.compareAtPriceCents != null && product.compareAtPriceCents > product.priceCents);
 	const ratio = $derived(IMAGE_RATIO_CLASS[storeSettings(page.data.config?.settings).productImageRatio]);
-	const canAdd = $derived(product.stock > cart.quantityOf(product.id));
+	const canAdd = $derived(orderableUnits(product.stock, MAX_LINE_QUANTITY) > cart.quantityOf(product.id));
+	const inStock = $derived(product.stock == null || product.stock > 0);
 
 	function quickAdd() {
 		const added = cart.add({
@@ -47,9 +48,9 @@
 			{#if onSale}
 				<Badge>{m.shop_sale()}</Badge>
 			{/if}
-			<StockBadge stock={product.stock} />
+			<StockBadge stock={product.stock} lowStock={product.lowStock} />
 		</div>
-		{#if product.stock > 0}
+		{#if inStock}
 			<button
 				type="button"
 				class="absolute end-2 bottom-2 z-10 grid size-9 place-items-center rounded-full bg-background/95 text-foreground shadow-md ring-1 ring-border transition hover:bg-primary hover:text-primary-foreground focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40 md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"

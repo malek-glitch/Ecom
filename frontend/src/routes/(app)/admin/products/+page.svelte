@@ -7,7 +7,7 @@
 	import PaginationBar from '$lib/components/app/PaginationBar.svelte';
 	import Seo from '$lib/components/app/Seo.svelte';
 	import ProductImage from '$lib/components/shop/ProductImage.svelte';
-	import StockBadge from '$lib/components/shop/StockBadge.svelte';
+	import StockStatusBadge from '$lib/components/shop/admin/StockStatusBadge.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -127,7 +127,9 @@
 						</div>
 					</Table.Cell>
 					<Table.Cell class="text-end tabular-nums">{formatMoney(product.priceCents, currency)}</Table.Cell>
-					<Table.Cell class="text-end tabular-nums">{formatNumber(product.stock)}</Table.Cell>
+					<Table.Cell class="text-end tabular-nums">
+						{product.trackInventory ? formatNumber(product.stock) : '—'}
+					</Table.Cell>
 					<Table.Cell class="hidden md:table-cell">
 						<div class="flex flex-wrap gap-1">
 							{#if product.active}
@@ -136,7 +138,9 @@
 								<Badge variant="secondary">{m.product_status_inactive()}</Badge>
 							{/if}
 							{#if product.featured}<Badge variant="outline">{m.product_featured()}</Badge>{/if}
-							<StockBadge stock={product.stock} />
+							{#if product.stockStatus === 'LOW' || product.stockStatus === 'OUT'}
+								<StockStatusBadge status={product.stockStatus} />
+							{/if}
 						</div>
 					</Table.Cell>
 				</Table.Row>

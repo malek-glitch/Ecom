@@ -22,6 +22,8 @@ interface UserRepository : JpaRepository<User, UUID>, JpaSpecificationExecutor<U
 
     fun countByRoleAndEnabledTrue(role: Role): Long
 
+    fun findAllByRoleAndEnabledTrue(role: Role): List<User>
+
     fun countByEnabledFalse(): Long
 
     fun countByEmailVerifiedAtIsNull(): Long

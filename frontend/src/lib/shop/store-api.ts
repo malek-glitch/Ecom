@@ -50,5 +50,7 @@ export function shopSettings(settings: Record<string, unknown> | undefined) {
 	};
 }
 
-/** Show "only N left" at or below this stock (the backend's app.shop.low-stock-threshold default). */
-export const LOW_STOCK = 5;
+/** Units that can still be ordered: null stock means not tracked, so the cap is the cart's limit. */
+export function orderableUnits(stock: number | null | undefined, cap: number): number {
+	return stock == null ? cap : Math.max(0, Math.min(stock, cap));
+}

@@ -10,7 +10,7 @@ test('an admin lists a product, a customer buys it, the admin ships it', async (
 	await open(admin, '/admin/products/new');
 	await admin.getByLabel('Name', { exact: true }).fill(name);
 	await admin.getByLabel('Price (EUR)', { exact: true }).fill('20.00');
-	await admin.getByLabel('Stock', { exact: true }).fill('3');
+	await admin.getByLabel('Initial stock', { exact: true }).fill('3');
 	await admin.getByRole('button', { name: 'Create' }).click();
 	await expect(admin.getByText('Product created. Add a photo below.')).toBeVisible();
 

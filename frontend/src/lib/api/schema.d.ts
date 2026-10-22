@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/inventory/products/{id}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/shop/cart/quote": {
         parameters: {
             query?: never;
@@ -420,6 +436,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/inventory/products/{id}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adjust"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -715,7 +747,87 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["settings"];
+        get: operations["settings_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/inventory/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/inventory/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["products_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/inventory/products/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["product_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/inventory/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["movements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/inventory/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["export"];
         put?: never;
         post?: never;
         delete?: never;
@@ -817,6 +929,9 @@ export interface components {
             sku?: string | null;
             /** Format: int32 */
             stock: number;
+            trackInventory: boolean;
+            /** @enum {string} */
+            stockStatus: "IN_STOCK" | "LOW" | "OUT" | "UNTRACKED";
             active: boolean;
             featured: boolean;
             category?: components["schemas"]["CategoryRef"] | null;
@@ -930,6 +1045,39 @@ export interface components {
             description: string;
             options: string[];
         };
+        InventorySettingsRequest: {
+            trackInventory: boolean;
+            /** Format: int32 */
+            lowStockThreshold?: number | null;
+            /** Format: int64 */
+            costCents?: number | null;
+        };
+        InventoryRow: {
+            /** Format: uuid */
+            productId: string;
+            name: string;
+            sku?: string | null;
+            imageUrl?: string | null;
+            categoryName?: string | null;
+            active: boolean;
+            trackInventory: boolean;
+            /** Format: int32 */
+            stock: number;
+            /** Format: int32 */
+            lowStockThreshold: number;
+            /** Format: int32 */
+            lowStockThresholdOverride?: number | null;
+            /** @enum {string} */
+            status: "IN_STOCK" | "LOW" | "OUT" | "UNTRACKED";
+            /** Format: int64 */
+            priceCents: number;
+            /** Format: int64 */
+            costCents?: number | null;
+            /** Format: int64 */
+            stockValueCents?: number | null;
+            /** Format: int64 */
+            version: number;
+        };
         CartItemRequest: {
             /** Format: uuid */
             productId: string | null;
@@ -952,7 +1100,7 @@ export interface components {
             /** Format: int64 */
             lineTotalCents: number;
             /** Format: int32 */
-            stock: number;
+            stock?: number | null;
         };
         CartQuote: {
             currency: string;
@@ -1080,6 +1228,34 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        AdjustStockRequest: {
+            /** @enum {string|null} */
+            kind: "RECEIVE" | "REMOVE" | "COUNT" | null;
+            /** Format: int32 */
+            quantity: number;
+            note: string;
+        };
+        MovementResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            productId: string;
+            productName?: string | null;
+            /** @enum {string} */
+            type: "INITIAL" | "RECEIVED" | "SOLD" | "RETURNED" | "REMOVED" | "COUNTED";
+            /** Format: int32 */
+            quantity: number;
+            /** Format: int32 */
+            stockAfter: number;
+            note: string;
+            /** Format: uuid */
+            orderId?: string | null;
+            /** Format: int64 */
+            orderNumber?: number | null;
+            actorName?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
         UpdateProfileRequest: {
             fullName?: string | null;
             locale?: string | null;
@@ -1101,7 +1277,8 @@ export interface components {
             compareAtPriceCents?: number | null;
             imageUrl?: string | null;
             /** Format: int32 */
-            stock: number;
+            stock?: number | null;
+            lowStock: boolean;
             category?: components["schemas"]["CategoryRef"] | null;
         };
         SearchSuggestions: {
@@ -1167,7 +1344,8 @@ export interface components {
             sku?: string | null;
             imageUrl?: string | null;
             /** Format: int32 */
-            stock: number;
+            stock?: number | null;
+            lowStock: boolean;
             category?: components["schemas"]["CategoryRef"] | null;
             seoTitle?: string | null;
             seoDescription?: string | null;
@@ -1327,6 +1505,49 @@ export interface components {
         };
         PageResponseAdminProductResponse: {
             items: components["schemas"]["AdminProductResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalItems: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        InventorySummary: {
+            enabled: boolean;
+            /** Format: int32 */
+            lowStockThreshold: number;
+            lowStockEmails: boolean;
+            currency: string;
+            /** Format: int64 */
+            trackedProducts: number;
+            /** Format: int64 */
+            unitsInStock: number;
+            /** Format: int64 */
+            lowStock: number;
+            /** Format: int64 */
+            outOfStock: number;
+            /** Format: int64 */
+            stockValueCents: number;
+            /** Format: int64 */
+            retailValueCents: number;
+            /** Format: int64 */
+            productsWithoutCost: number;
+        };
+        PageResponseInventoryRow: {
+            items: components["schemas"]["InventoryRow"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalItems: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        PageResponseMovementResponse: {
+            items: components["schemas"]["MovementResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -1627,6 +1848,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AdminSettingResponse"];
+                };
+            };
+        };
+    };
+    settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventorySettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryRow"];
                 };
             };
         };
@@ -2236,6 +2483,32 @@ export interface operations {
             };
         };
     };
+    adjust: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustStockRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MovementResponse"];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -2739,7 +3012,7 @@ export interface operations {
             };
         };
     };
-    settings: {
+    settings_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2755,6 +3028,118 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AdminSettingResponse"][];
+                };
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventorySummary"];
+                };
+            };
+        };
+    };
+    products_2: {
+        parameters: {
+            query?: {
+                q?: string;
+                status?: "LOW" | "OUT" | "IN_STOCK" | "UNTRACKED";
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageResponseInventoryRow"];
+                };
+            };
+        };
+    };
+    product_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InventoryRow"];
+                };
+            };
+        };
+    };
+    movements: {
+        parameters: {
+            query?: {
+                productId?: string;
+                type?: "INITIAL" | "RECEIVED" | "SOLD" | "RETURNED" | "REMOVED" | "COUNTED";
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageResponseMovementResponse"];
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
         };

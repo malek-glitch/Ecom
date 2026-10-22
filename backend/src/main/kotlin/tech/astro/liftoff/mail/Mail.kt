@@ -9,6 +9,7 @@ enum class MailKind(val key: String) {
     ORDER_PLACED("order_placed"),
     ORDER_SHIPPED("order_shipped"),
     ORDER_CANCELLED("order_cancelled"),
+    LOW_STOCK("low_stock"),
 }
 
 /** Published inside a transaction; delivered only after it commits. */

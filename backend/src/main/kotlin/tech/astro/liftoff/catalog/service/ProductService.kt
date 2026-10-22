@@ -21,7 +21,8 @@ import tech.astro.liftoff.catalog.dto.SitemapProduct
 import tech.astro.liftoff.catalog.model.Category
 import tech.astro.liftoff.catalog.model.Product
 import tech.astro.liftoff.catalog.repository.ProductRepository
-import tech.astro.liftoff.shared.config.AppProperties
+import tech.astro.liftoff.inventory.service.InventoryPolicy
+import tech.astro.liftoff.inventory.service.InventoryService
 import tech.astro.liftoff.shared.error.ConflictException
 import tech.astro.liftoff.shared.error.FieldValidationException
 import tech.astro.liftoff.shared.error.NotFoundException
@@ -38,7 +39,8 @@ class ProductService(
     private val mapper: CatalogMapper,
     private val audit: AuditService,
     private val events: ApplicationEventPublisher,
-    private val props: AppProperties,
+    private val inventory: InventoryPolicy,
+    private val inventoryService: InventoryService,
 ) {
     // ------------------------------------------------------------------ store (public)
 
@@ -83,12 +85,20 @@ class ProductService(
         if (categoryId != null) {
             spec = spec.and { root, _, cb -> cb.equal(root.get<Category>("category").get<UUID>("id"), categoryId) }
         }
-        val low = props.shop.lowStockThreshold
+        val low = inventory.globalThreshold()
         when (status) {
             ProductStatusFilter.ACTIVE -> spec = spec.and { root, _, cb -> cb.isTrue(root.get("active")) }
             ProductStatusFilter.INACTIVE -> spec = spec.and { root, _, cb -> cb.isFalse(root.get("active")) }
-            ProductStatusFilter.LOW_STOCK -> spec = spec.and { root, _, cb -> cb.and(cb.isTrue(root.get("active")), cb.between(root.get<Int>("stock"), 1, low)) }
-            ProductStatusFilter.OUT_OF_STOCK -> spec = spec.and { root, _, cb -> cb.equal(root.get<Int>("stock"), 0) }
+            ProductStatusFilter.LOW_STOCK -> spec = spec.and { root, _, cb ->
+                cb.and(
+                    cb.isTrue(root.get("trackInventory")),
+                    cb.gt(root.get<Int>("stock"), 0),
+                    cb.le(root.get<Int>("stock"), cb.coalesce(root.get<Int>("lowStockThreshold"), low)),
+                )
+            }
+            ProductStatusFilter.OUT_OF_STOCK -> spec = spec.and { root, _, cb ->
+                cb.and(cb.isTrue(root.get("trackInventory")), cb.le(root.get<Int>("stock"), 0))
+            }
             null -> Unit
         }
         if (!query.isNullOrBlank()) {
@@ -107,9 +117,11 @@ class ProductService(
             slug = resolveSlug(request, current = null),
             name = request.name.trim(),
             priceCents = request.priceCents,
+            stock = request.stock,
         )
         apply(product, request)
         products.saveAndFlush(product)
+        inventoryService.recordInitial(product, actor)
         audit.record(AuditActions.ADMIN_PRODUCT_CREATED, actor = actor, targetType = "product", targetId = product.id.toString(), targetLabel = product.name)
         return mapper.admin(product)
     }
@@ -153,7 +165,6 @@ class ProductService(
         product.priceCents = request.priceCents
         product.compareAtPriceCents = compareAt
         product.sku = sku
-        product.stock = request.stock
         product.active = request.active
         product.featured = request.featured
         product.category = request.categoryId?.let(categories::load)

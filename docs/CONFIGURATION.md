@@ -130,7 +130,6 @@ Spring maps `app.auth.password-reset-ttl` to `APP_AUTH_PASSWORDRESETTTL`: upperc
 | `app.storage.create-bucket` (`APP_STORAGE_CREATEBUCKET`) | `true` | Create the bucket at startup. Turn it off when the key can't create buckets. |
 | `app.storage.max-avatar-size` (`APP_STORAGE_MAXAVATARSIZE`) | `5MB` | Largest accepted profile photo. |
 | `app.storage.max-product-image-size` (`APP_STORAGE_MAXPRODUCTIMAGESIZE`) | `8MB` | Largest accepted product photo (also capped by `spring.servlet.multipart.max-file-size`, 10MB). |
-| `app.shop.low-stock-threshold` (`APP_SHOP_LOWSTOCKTHRESHOLD`) | `5` | Products at or below this stock count as "low stock" in the admin stats and filters. |
 | `app.rate-limit.policies.<name>.capacity` / `.period` (`APP_RATELIMIT_POLICIES_LOGIN_CAPACITY`, `APP_RATELIMIT_POLICIES_LOGIN_PERIOD`) | see below | Override a rate-limit policy. |
 | `app.audit.retention` (`APP_AUDIT_RETENTION`) | `365d` | Audit events older than this are deleted every night. |
 | `app.maintenance.cron` (`APP_MAINTENANCE_CRON`) | `0 17 3 * * *` | When the nightly cleanup runs: expired sessions, used email links, old audit events. |
@@ -163,6 +162,9 @@ A setting nobody has changed uses its default.
 | `shop.shippingFlatCents` | `500` | Shipping fee per order, in minor units (500 = 5.00). `0` ships everything free. |
 | `shop.freeShippingThresholdCents` | `5000` | Orders from this subtotal ship free. `0` turns the offer off. |
 | `shop.bankTransferInstructions` | empty | Bank details shown to customers who pay by transfer. Empty hides that payment option; cash on delivery is always offered. |
+| `inventory.enabled` | `true` | The stock module. On: orders take items out of stock and sold-out products can't be ordered. Off: every product can always be ordered and no stock is shown. Also switchable on **Store → Inventory**. |
+| `inventory.lowStockThreshold` | `5` | Products at or below this many units count as low stock (customers see "only 3 left", admins get alerts). Each product can override it. |
+| `inventory.lowStockEmails` | `true` | Email the administrators when a product runs low or sells out. |
 
 The look and the texts of the store are settings too. They are easiest to edit in
 **Store → Appearance**, which shows a live preview; **App settings** lists them as well.
